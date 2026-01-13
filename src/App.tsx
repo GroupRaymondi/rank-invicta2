@@ -31,7 +31,12 @@ const DashboardContent = () => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [sales, setSales] = useState<MonthlySales[]>([]);
 
-  const [alertData, setAlertData] = useState<{ isVisible: boolean; sellerName?: string; value?: number }>({ isVisible: false });
+  const [alertData, setAlertData] = useState<{
+    isVisible: boolean;
+    sellerName?: string;
+    processName?: string;
+    entryValue?: number;
+  }>({ isVisible: false });
 
   useEffect(() => {
     // Removed user check to allow public access
@@ -64,54 +69,50 @@ const DashboardContent = () => {
 
     fetchData();
 
-    // Realtime Subscription
+    // Realtime Subscription for Ranking Updates (Monthly Sales)
     const salesSubscription = supabase
       .channel('sales_updates')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'seller_monthly_sales' }, (payload) => {
-        console.log('Realtime Payload:', payload);
-        // Refresh data
+        console.log('Monthly Sales Update:', payload);
+        // Refresh data only, do NOT trigger alert here anymore
         fetchData();
+      })
+      .subscribe();
 
-        // Check for new sale (UPDATE or INSERT)
-        if (payload.eventType === 'UPDATE') {
-          const newRecord = payload.new as { seller_id: string; deals_closed: number; total_sales: number };
-          const oldRecord = payload.old as { seller_id: string; deals_closed: number; total_sales: number };
+    // Realtime Subscription for New Sales Alerts (Individual Processes)
+    const newSaleSubscription = supabase
+      .channel('new_sale_alerts')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'sales_processes' }, (payload) => {
+        console.log('New Sale Detected:', payload);
+        const newSale = payload.new as {
+          seller_id: string;
+          seller_name: string;
+          process_type_name: string;
+          paid_amount: number;
+        };
 
-          console.log('Update detected:', { new: newRecord, old: oldRecord });
+        // Trigger Alert with detailed info
+        triggerAlert(newSale.seller_name, newSale.process_type_name, newSale.paid_amount);
 
-          if (oldRecord && newRecord.deals_closed > oldRecord.deals_closed) {
-            const valueDiff = newRecord.total_sales - oldRecord.total_sales;
-            triggerAlert(newRecord.seller_id, valueDiff);
-          }
-        } else if (payload.eventType === 'INSERT') {
-          const newRecord = payload.new as { seller_id: string; deals_closed: number; total_sales: number };
-
-          console.log('Insert detected:', newRecord);
-
-          if (newRecord.deals_closed > 0) {
-            triggerAlert(newRecord.seller_id, newRecord.total_sales);
-          }
-        }
+        // Also refresh data to ensure ranking is up to date
+        fetchData();
       })
       .subscribe();
 
     return () => {
       salesSubscription.unsubscribe();
+      newSaleSubscription.unsubscribe();
     };
   }, []); // Removed user dependency
 
-  const triggerAlert = (sellerId: string, value: number) => {
-    supabase.from('profiles').select('full_name').eq('id', sellerId).single()
-      .then(({ data }) => {
-        if (data) {
-          console.log('Triggering alert for:', data.full_name, 'Value:', value);
-          setAlertData({
-            isVisible: true,
-            sellerName: data.full_name,
-            value: value > 0 ? value : undefined
-          });
-        }
-      });
+  const triggerAlert = (sellerName: string, processName: string, entryValue: number) => {
+    console.log('Triggering alert for:', sellerName, 'Process:', processName, 'Value:', entryValue);
+    setAlertData({
+      isVisible: true,
+      sellerName: sellerName,
+      processName: processName,
+      entryValue: entryValue
+    });
   };
 
   // Process Data
@@ -257,7 +258,8 @@ const DashboardContent = () => {
       <SalesAlert
         isVisible={alertData.isVisible}
         sellerName={alertData.sellerName}
-        value={alertData.value}
+        processName={alertData.processName}
+        entryValue={alertData.entryValue}
         onComplete={() => setAlertData(prev => ({ ...prev, isVisible: false }))}
       />
     </DashboardLayout>

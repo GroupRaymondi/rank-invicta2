@@ -5,11 +5,13 @@ import { Rocket, Bell } from 'lucide-react';
 interface SalesAlertProps {
     isVisible?: boolean;
     sellerName?: string;
-    value?: number;
+    processName?: string;
+    entryValue?: number;
+    value?: number; // Keeping for backward compatibility or total value if needed
     onComplete?: () => void;
 }
 
-export const SalesAlert: React.FC<SalesAlertProps> = ({ isVisible = false, sellerName, value, onComplete }) => {
+export const SalesAlert: React.FC<SalesAlertProps> = ({ isVisible = false, sellerName, processName, entryValue, value, onComplete }) => {
     React.useEffect(() => {
         if (isVisible) {
             // Play rocket sound
@@ -45,12 +47,18 @@ export const SalesAlert: React.FC<SalesAlertProps> = ({ isVisible = false, selle
                 </h2>
 
                 <div className="mt-8 text-center space-y-4">
-                    <p className="text-4xl text-white font-bold tracking-wide drop-shadow-lg">{sellerName}</p>
-                    {value !== undefined && (
-                        <div className="inline-block bg-green-500/20 border border-green-500/40 rounded-full px-8 py-3 shadow-[0_0_20px_rgba(34,197,94,0.3)]">
-                            <p className="text-3xl text-green-400 font-black tracking-widest">
-                                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)}
+                    <p className="text-5xl text-white font-bold tracking-wide drop-shadow-lg">{sellerName}</p>
+
+                    {processName && (
+                        <p className="text-2xl text-gray-300 font-medium tracking-wider uppercase">{processName}</p>
+                    )}
+
+                    {entryValue !== undefined && (
+                        <div className="inline-block bg-green-500/20 border border-green-500/40 rounded-full px-10 py-4 shadow-[0_0_30px_rgba(34,197,94,0.4)] mt-4">
+                            <p className="text-4xl text-green-400 font-black tracking-widest">
+                                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(entryValue)}
                             </p>
+                            <p className="text-xs text-green-500/80 uppercase tracking-widest font-bold mt-1">Entrada</p>
                         </div>
                     )}
                 </div>
