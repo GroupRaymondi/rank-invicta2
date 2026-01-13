@@ -77,10 +77,14 @@ const RankItem: React.FC<{ seller: Seller; index: number }> = ({ seller, index }
                             <Siren className="w-6 h-6 text-red-600 fill-red-600 animate-[pulse_0.5s_ease-in-out_infinite] drop-shadow-[0_0_15px_rgba(220,38,38,1)]" />
                         </div>
                     ) : (
-                        <>
-                            <span className="text-white/60 text-xs font-normal mr-1">Processos:</span>
-                            {seller.deals}
-                        </>
+                        <div className="flex flex-col items-end justify-center">
+                            <span className="text-2xl font-bold text-primary drop-shadow-[0_0_10px_rgba(14,165,233,0.5)]">
+                                {seller.deals}
+                            </span>
+                            <span className="text-[10px] text-white/40 uppercase tracking-wider font-medium">
+                                Processos
+                            </span>
+                        </div>
                     )}
                 </div>
             </div>
