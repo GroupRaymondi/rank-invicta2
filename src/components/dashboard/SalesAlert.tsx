@@ -79,7 +79,7 @@ export const SalesAlert: React.FC<SalesAlertProps> = ({ isVisible = false, selle
                     {entryValue !== undefined && (
                         <div className="inline-block bg-green-500/20 border border-green-500/40 rounded-full px-12 py-5 shadow-[0_0_40px_rgba(34,197,94,0.5)] mt-6 transform scale-110">
                             <p className="text-5xl text-green-400 font-black tracking-widest">
-                                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(entryValue)}
+                                {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(entryValue)}
                             </p>
                             <p className="text-sm text-green-500/80 uppercase tracking-[0.3em] font-bold mt-2">Valor de Entrada</p>
                         </div>

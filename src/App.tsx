@@ -31,6 +31,7 @@ const DashboardContent = () => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [sales, setSales] = useState<MonthlySales[]>([]);
 
+  // Alert State
   const [alertData, setAlertData] = useState<{
     isVisible: boolean;
     sellerName?: string;
@@ -38,6 +39,16 @@ const DashboardContent = () => {
     processName?: string;
     entryValue?: number;
   }>({ isVisible: false });
+
+  // Queue System
+  const [alertQueue, setAlertQueue] = useState<Array<{
+    id: string;
+    responsible_id: string;
+    process_type_name: string;
+    paid_amount: string | number;
+  }>>([]);
+  const processedSaleIds = useRef<Set<string>>(new Set());
+  const isProcessingAlert = useRef(false);
 
   useEffect(() => {
     // Removed user check to allow public access
@@ -86,23 +97,23 @@ const DashboardContent = () => {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'sales_processes' }, (payload) => {
         console.log('New Sale Detected:', payload);
         const newSale = payload.new as {
+          id: string;
           responsible_id: string;
           process_type_name: string;
           paid_amount: string | number;
         };
 
-        // Find seller name and avatar from profiles
-        const sellerProfile = profiles.find(p => p.id === newSale.responsible_id);
-        const sellerName = sellerProfile ? sellerProfile.full_name : 'Vendedor';
-        const sellerAvatar = sellerProfile ? sellerProfile.avatar_url : undefined;
+        // De-duplication check
+        if (processedSaleIds.current.has(newSale.id)) {
+          console.log('Duplicate sale ignored:', newSale.id);
+          return;
+        }
 
-        // Parse amount (ensure it's a number)
-        const entryValue = typeof newSale.paid_amount === 'string'
-          ? parseFloat(newSale.paid_amount)
-          : newSale.paid_amount;
+        // Add to processed set
+        processedSaleIds.current.add(newSale.id);
 
-        // Trigger Alert with detailed info
-        triggerAlert(sellerName, sellerAvatar, newSale.process_type_name, entryValue);
+        // Add to Queue
+        setAlertQueue(prev => [...prev, newSale]);
 
         // Also refresh data to ensure ranking is up to date
         fetchData();
@@ -115,15 +126,68 @@ const DashboardContent = () => {
     };
   }, [profiles]); // Added profiles dependency to ensure lookup works
 
-  const triggerAlert = (sellerName: string, sellerAvatar: string | undefined, processName: string, entryValue: number) => {
-    console.log('Triggering alert for:', sellerName, 'Process:', processName, 'Value:', entryValue);
-    setAlertData({
-      isVisible: true,
-      sellerName: sellerName,
-      sellerAvatar: sellerAvatar,
-      processName: processName,
-      entryValue: entryValue
-    });
+  // Process Queue
+  useEffect(() => {
+    const processNextInQueue = async () => {
+      if (alertQueue.length === 0 || isProcessingAlert.current || alertData.isVisible) return;
+
+      isProcessingAlert.current = true;
+      const nextSale = alertQueue[0];
+
+      try {
+        // Find seller name and avatar from profiles (Local Lookup)
+        let sellerProfile = profiles.find(p => p.id === nextSale.responsible_id);
+
+        // On-Demand Fetch if not found locally
+        if (!sellerProfile) {
+          console.log('Seller not found locally, fetching from DB:', nextSale.responsible_id);
+          const { data } = await supabase
+            .from('profiles')
+            .select('id, full_name, avatar_url, team')
+            .eq('id', nextSale.responsible_id)
+            .single();
+
+          if (data) {
+            sellerProfile = data;
+            // Optionally update local state to avoid re-fetching
+            setProfiles(prev => [...prev, data]);
+          }
+        }
+
+        const sellerName = sellerProfile ? sellerProfile.full_name : 'Vendedor';
+        const sellerAvatar = sellerProfile ? sellerProfile.avatar_url : undefined;
+
+        // Parse amount (ensure it's a number)
+        const entryValue = typeof nextSale.paid_amount === 'string'
+          ? parseFloat(nextSale.paid_amount)
+          : nextSale.paid_amount;
+
+        // Trigger Alert
+        setAlertData({
+          isVisible: true,
+          sellerName,
+          sellerAvatar,
+          processName: nextSale.process_type_name,
+          entryValue
+        });
+
+        // Remove from queue
+        setAlertQueue(prev => prev.slice(1));
+
+      } catch (error) {
+        console.error('Error processing alert queue:', error);
+        // Remove from queue even on error to prevent blocking
+        setAlertQueue(prev => prev.slice(1));
+        isProcessingAlert.current = false;
+      }
+    };
+
+    processNextInQueue();
+  }, [alertQueue, alertData.isVisible, profiles]);
+
+  const handleAlertComplete = () => {
+    setAlertData(prev => ({ ...prev, isVisible: false }));
+    isProcessingAlert.current = false;
   };
 
   // Process Data
@@ -272,7 +336,7 @@ const DashboardContent = () => {
         sellerAvatar={alertData.sellerAvatar}
         processName={alertData.processName}
         entryValue={alertData.entryValue}
-        onComplete={() => setAlertData(prev => ({ ...prev, isVisible: false }))}
+        onComplete={handleAlertComplete}
       />
     </DashboardLayout>
   );
