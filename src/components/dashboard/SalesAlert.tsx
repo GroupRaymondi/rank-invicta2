@@ -49,6 +49,7 @@ export const SalesAlert: React.FC<SalesAlertProps> = ({ isVisible = false, selle
 
                         {/* Rocket Container - Animating Upwards with Framer Motion */}
                         <motion.div
+                            key={`rocket-${sellerName}-${Date.now()}`} // Force re-render for every new alert
                             initial={{ y: "100vh", x: "-50%" }}
                             animate={{ y: "-150vh" }}
                             // Prevent exit animation from interfering with rocket flight if it happens early
@@ -57,7 +58,7 @@ export const SalesAlert: React.FC<SalesAlertProps> = ({ isVisible = false, selle
                                 y: { duration: 12, ease: "easeInOut" },
                                 default: { duration: 0.5 }
                             }}
-                            className="absolute left-1/2 flex flex-col items-center z-30"
+                            className="absolute left-1/2 flex flex-col items-center z-50"
                         >
                             {/* Rocket Image */}
                             <img
