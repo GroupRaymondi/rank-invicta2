@@ -1,5 +1,6 @@
 import React from 'react';
 import { Bell } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 
 interface SalesAlertProps {
@@ -36,11 +37,16 @@ export const SalesAlert: React.FC<SalesAlertProps> = ({ isVisible = false, selle
     if (!isVisible) return null;
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/90 backdrop-blur-md transition-opacity duration-500 pb-10">
-            <div className="relative flex flex-col items-center w-full h-full justify-end">
+        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/30 backdrop-blur-sm transition-opacity duration-500 pb-10">
+            <div className="relative flex flex-col items-center w-full h-full justify-end overflow-hidden">
 
-                {/* Rocket Container - Animating Upwards */}
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex flex-col items-center animate-[rocket-fly_12s_ease-in-out_forwards] z-30">
+                {/* Rocket Container - Animating Upwards with Framer Motion */}
+                <motion.div
+                    initial={{ y: "100vh", x: "-50%" }}
+                    animate={{ y: "-150vh" }}
+                    transition={{ duration: 12, ease: "easeInOut" }}
+                    className="absolute left-1/2 flex flex-col items-center z-30"
+                >
                     {/* Rocket Image */}
                     <img
                         src="/rocket-custom.png"
@@ -48,12 +54,17 @@ export const SalesAlert: React.FC<SalesAlertProps> = ({ isVisible = false, selle
                         className="w-96 h-auto drop-shadow-[0_0_50px_rgba(14,165,233,0.8)] mb-4"
                     />
 
-                    {/* Fire/Thrust Effect (Optional visual enhancement) */}
+                    {/* Fire/Thrust Effect */}
                     <div className="w-4 h-20 bg-orange-500 blur-xl animate-pulse absolute bottom-10 opacity-80"></div>
-                </div>
+                </motion.div>
 
-                {/* Content Card - Fades in and stays or moves slightly */}
-                <div className="relative z-40 flex flex-col items-center animate-[fade-in-up_1s_ease-out_0.5s_forwards] opacity-0 mb-20">
+                {/* Content Card - Fades in */}
+                <motion.div
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5, duration: 1 }}
+                    className="relative z-40 flex flex-col items-center mb-20"
+                >
 
                     {/* Avatar */}
                     <div className="relative mb-6">
@@ -97,7 +108,7 @@ export const SalesAlert: React.FC<SalesAlertProps> = ({ isVisible = false, selle
                             </div>
                         )}
                     </div>
-                </div>
+                </motion.div>
 
                 {/* Background Effects */}
                 <div className="absolute inset-0 pointer-events-none">
@@ -105,19 +116,6 @@ export const SalesAlert: React.FC<SalesAlertProps> = ({ isVisible = false, selle
                     <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-[100px] animate-pulse delay-700"></div>
                 </div>
             </div>
-
-            {/* Global Styles for Custom Keyframes if not in Tailwind config */}
-            <style>{`
-                @keyframes rocket-fly {
-                    0% { transform: translateY(100vh) translateX(-50%); opacity: 0; }
-                    10% { opacity: 1; }
-                    100% { transform: translateY(-120vh) translateX(-50%); opacity: 1; }
-                }
-                @keyframes fade-in-up {
-                    0% { transform: translateY(50px); opacity: 0; }
-                    100% { transform: translateY(0); opacity: 1; }
-                }
-            `}</style>
         </div>
     );
 };
