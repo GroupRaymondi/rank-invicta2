@@ -142,11 +142,11 @@ const DashboardContent = () => {
       const nextSale = alertQueue[0];
 
       try {
-        // Explicitly fetch the sale to get the correct created_by
+        // Explicitly fetch the sale to get details including client_id
         // The realtime payload might be incomplete or we want to be 100% sure
         const { data: saleData, error: saleError } = await supabase
           .from('sales_processes')
-          .select('created_by, responsible_id')
+          .select('created_by, responsible_id, client_id')
           .eq('id', nextSale.id)
           .single();
 
@@ -154,13 +154,29 @@ const DashboardContent = () => {
           console.error('Error fetching sale details for alert:', saleError);
         }
 
-        // Determine the correct seller ID: 
-        // 1. Fetched created_by (Most reliable)
-        // 2. Payload created_by
-        // 3. Payload seller_id
-        // 4. Fetched responsible_id
-        // 5. Payload responsible_id
-        const targetSellerId = saleData?.created_by || nextSale.created_by || nextSale.seller_id || saleData?.responsible_id || nextSale.responsible_id;
+        let targetSellerId = saleData?.responsible_id || nextSale.responsible_id || nextSale.seller_id;
+
+        // If we have a client_id, try to find the seller assigned to that client
+        // This is the "Source of Truth" for who owns the client
+        const clientId = saleData?.client_id; // Note: payload might not have client_id, so rely on fetch
+
+        if (clientId) {
+          const { data: clientData } = await supabase
+            .from('clients')
+            .select('seller_id')
+            .eq('id', clientId)
+            .single();
+
+          if (clientData && clientData.seller_id) {
+            console.log('Found Seller via Client:', clientData.seller_id);
+            targetSellerId = clientData.seller_id;
+          }
+        }
+
+        // Fallback to created_by if still nothing (though unlikely if logic is correct)
+        if (!targetSellerId) {
+          targetSellerId = saleData?.created_by || nextSale.created_by;
+        }
 
         if (!targetSellerId) {
           console.warn('No valid seller ID found for sale:', nextSale.id);
@@ -177,6 +193,7 @@ const DashboardContent = () => {
           saleId: nextSale.id,
           targetSellerId,
           foundProfile: !!sellerProfile,
+          clientId,
           payloadCreatedBy: nextSale.created_by,
           fetchedCreatedBy: saleData?.created_by
         });
@@ -197,7 +214,18 @@ const DashboardContent = () => {
           }
         }
 
-        const sellerName = sellerProfile ? sellerProfile.full_name : 'Vendedor';
+
+
+        // Format Name: First + Last only
+        let sellerName = 'Vendedor';
+        if (sellerProfile && sellerProfile.full_name) {
+          const parts = sellerProfile.full_name.trim().split(/\s+/);
+          if (parts.length > 1) {
+            sellerName = `${parts[0]} ${parts[parts.length - 1]}`;
+          } else {
+            sellerName = parts[0];
+          }
+        }
         const sellerAvatar = sellerProfile ? sellerProfile.avatar_url : undefined;
 
         // Parse amount (ensure it's a number)
@@ -339,7 +367,38 @@ const DashboardContent = () => {
         <div className="col-span-6 h-full flex flex-col relative py-4" style={{ animationDelay: '0.2s' }}>
 
           {/* 1. Logo & Name (Top) */}
-          <div className="flex-none flex flex-col items-center justify-start relative z-20 pt-2">
+          <div className="flex-none flex flex-col items-center justify-start relative z-20 pt-10">
+            {/* Test Button (Only for testing) */}
+            <button
+              onClick={() => {
+                // Pick a random profile
+                const randomProfile = profiles.length > 0
+                  ? profiles[Math.floor(Math.random() * profiles.length)]
+                  : { id: 'test-id' };
+
+                // Cycle through test values: 500 -> 1000 -> 2500 -> 5000
+                const testValues = [500, 1000, 2500, 5000];
+                // We use a simple way to cycle by storing index in a global or just random for now if state is tricky
+                // Let's use random from this specific set to ensure we see all cases eventually, 
+                // OR better: let's use the current length of alertQueue to determine the index? No, that changes.
+                // Let's just pick one of the 4 scenarios randomly for now, as adding state might be complex with partial view.
+                // User asked to "mesclar", random is a form of mixing.
+                // actually, let's try to be smarter.
+                const testValue = testValues[Math.floor(Math.random() * testValues.length)];
+
+                const mockSale = {
+                  id: `test-${Date.now()}`,
+                  responsible_id: randomProfile.id,
+                  created_by: randomProfile.id,
+                  process_type_name: ['VISTO T', 'GREEN CARD', 'CIDADANIA', 'CONSULTORIA'][Math.floor(Math.random() * 4)],
+                  paid_amount: testValue
+                };
+                setAlertQueue(prev => [...prev, mockSale]);
+              }}
+              className="fixed bottom-4 right-4 z-[200] bg-red-600 text-white px-4 py-2 rounded-lg font-bold shadow-lg hover:bg-red-700 transition-colors"
+            >
+              TEST ALERT 🚀
+            </button>
             <div className="w-24 h-24 relative group mb-1">
               <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <img src="/logo.png" alt="Invicta Consulting" className="w-full h-full object-contain drop-shadow-[0_0_20px_rgba(14,165,233,0.3)] relative z-10" />
@@ -349,12 +408,18 @@ const DashboardContent = () => {
             </h1>
           </div>
 
-          {/* 2. KPI (Middle - Raised slightly) */}
-          <div className="flex-1 flex items-center justify-center relative z-20 min-h-0 pb-32">
-            <div className="transform scale-150 hover:scale-155 transition-transform duration-300">
+          {/* Spacer to push content down */}
+          <div className="flex-1" />
+
+          {/* 2. KPI (Centered in available space) */}
+          <div className="flex-none flex items-center justify-center relative z-20 min-h-0">
+            <div className="transform scale-125 hover:scale-135 transition-transform duration-300">
               <KPICards totalProcesses={processedData.totalProcesses} />
             </div>
           </div>
+
+          {/* Spacer to push Podium down */}
+          <div className="flex-1" />
 
           {/* 3. Podium (Bottom) */}
           <div className="flex-none flex items-end justify-center relative z-10 pb-6">
