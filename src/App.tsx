@@ -44,6 +44,8 @@ const DashboardContent = () => {
   const [alertQueue, setAlertQueue] = useState<Array<{
     id: string;
     responsible_id: string;
+    created_by?: string; // Added created_by
+    seller_id?: string;  // Added seller_id
     process_type_name: string;
     paid_amount: string | number;
   }>>([]);
@@ -99,6 +101,8 @@ const DashboardContent = () => {
         const newSale = payload.new as {
           id: string;
           responsible_id: string;
+          created_by?: string; // Capture created_by
+          seller_id?: string;  // Capture seller_id
           process_type_name: string;
           paid_amount: string | number;
         };
@@ -135,16 +139,27 @@ const DashboardContent = () => {
       const nextSale = alertQueue[0];
 
       try {
+        // Determine the correct seller ID: created_by -> seller_id -> responsible_id
+        const targetSellerId = nextSale.created_by || nextSale.seller_id || nextSale.responsible_id;
+
+        if (!targetSellerId) {
+          console.warn('No valid seller ID found for sale:', nextSale.id);
+          // Skip this alert but remove from queue to avoid blocking
+          setAlertQueue(prev => prev.slice(1));
+          isProcessingAlert.current = false;
+          return;
+        }
+
         // Find seller name and avatar from profiles (Local Lookup)
-        let sellerProfile = profiles.find(p => p.id === nextSale.responsible_id);
+        let sellerProfile = profiles.find(p => p.id === targetSellerId);
 
         // On-Demand Fetch if not found locally
         if (!sellerProfile) {
-          console.log('Seller not found locally, fetching from DB:', nextSale.responsible_id);
+          console.log('Seller not found locally, fetching from DB:', targetSellerId);
           const { data } = await supabase
             .from('profiles')
             .select('id, full_name, avatar_url, team')
-            .eq('id', nextSale.responsible_id)
+            .eq('id', targetSellerId)
             .single();
 
           if (data) {
