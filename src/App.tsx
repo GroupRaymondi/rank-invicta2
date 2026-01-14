@@ -170,6 +170,14 @@ const DashboardContent = () => {
         // Find seller name and avatar from profiles (Local Lookup)
         let sellerProfile = profiles.find(p => p.id === targetSellerId);
 
+        console.log('Processing Alert:', {
+          saleId: nextSale.id,
+          targetSellerId,
+          foundProfile: !!sellerProfile,
+          payloadCreatedBy: nextSale.created_by,
+          fetchedCreatedBy: saleData?.created_by
+        });
+
         // On-Demand Fetch if not found locally
         if (!sellerProfile) {
           console.log('Seller not found locally, fetching from DB:', targetSellerId);
@@ -203,8 +211,8 @@ const DashboardContent = () => {
           entryValue
         });
 
-        // Remove from queue
-        setAlertQueue(prev => prev.slice(1));
+        // NOTE: We do NOT remove from queue here anymore. 
+        // We wait for handleAlertComplete to ensure the alert finishes.
 
       } catch (error) {
         console.error('Error processing alert queue:', error);
@@ -220,6 +228,8 @@ const DashboardContent = () => {
   const handleAlertComplete = useCallback(() => {
     setAlertData(prev => ({ ...prev, isVisible: false }));
     isProcessingAlert.current = false;
+    // Remove the finished alert from the queue to process the next one
+    setAlertQueue(prev => prev.slice(1));
   }, []);
 
   // Process Data
