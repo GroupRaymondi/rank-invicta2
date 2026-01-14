@@ -47,20 +47,19 @@ export const SalesAlert: React.FC<SalesAlertProps> = ({ isVisible = false, saleI
                     transition={{ duration: 0.5 }}
                     className="fixed inset-0 z-[100] flex items-end justify-center bg-black/30 backdrop-blur-sm pb-10"
                 >
-                    <div className="relative flex flex-col items-center w-full h-full justify-end overflow-hidden">
+                    <div className="relative flex flex-col items-center w-full h-full justify-end">
 
                         {/* Rocket Container - Animating Upwards with Framer Motion */}
                         <motion.div
-                            key={saleId ? `rocket-${saleId}` : `rocket-${Date.now()}`} // Use stable saleId with fallback
-                            initial={{ y: "100vh", x: "-50%" }}
+                            key={saleId ? `rocket-${saleId}` : `rocket-${Date.now()}`}
+                            initial={{ y: "100vh" }}
                             animate={{ y: "-150vh" }}
-                            // Prevent exit animation from interfering with rocket flight if it happens early
                             exit={{ opacity: 0 }}
                             transition={{
                                 y: { duration: 12, ease: "easeInOut" },
                                 default: { duration: 0.5 }
                             }}
-                            className="absolute left-1/2 flex flex-col items-center z-50"
+                            className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center z-50"
                         >
                             {/* Rocket Image */}
                             <img
