@@ -34,11 +34,14 @@ const DashboardContent = () => {
   // Alert State
   const [alertData, setAlertData] = useState<{
     isVisible: boolean;
+    id?: string; // Added sale ID
     sellerName?: string;
     sellerAvatar?: string;
     processName?: string;
     entryValue?: number;
   }>({ isVisible: false });
+
+
 
   // Queue System
   const [alertQueue, setAlertQueue] = useState<Array<{
@@ -205,6 +208,7 @@ const DashboardContent = () => {
         // Trigger Alert
         setAlertData({
           isVisible: true,
+          id: nextSale.id, // Pass sale ID
           sellerName,
           sellerAvatar,
           processName: nextSale.process_type_name,
@@ -374,6 +378,7 @@ const DashboardContent = () => {
       {/* Sales Alert */}
       <SalesAlert
         isVisible={alertData.isVisible}
+        saleId={alertData.id} // Pass sale ID
         sellerName={alertData.sellerName}
         sellerAvatar={alertData.sellerAvatar}
         processName={alertData.processName}

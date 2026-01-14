@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 interface SalesAlertProps {
     isVisible?: boolean;
+    saleId?: string; // Added saleId
     sellerName?: string;
     sellerAvatar?: string;
     processName?: string;
@@ -13,9 +14,10 @@ interface SalesAlertProps {
     onComplete?: () => void;
 }
 
-export const SalesAlert: React.FC<SalesAlertProps> = ({ isVisible = false, sellerName, sellerAvatar, processName, entryValue, onComplete }) => {
+export const SalesAlert: React.FC<SalesAlertProps> = ({ isVisible = false, saleId, sellerName, sellerAvatar, processName, entryValue, onComplete }) => {
     React.useEffect(() => {
         if (isVisible) {
+            console.log('SalesAlert Visible', { saleId, sellerName });
             // Play rocket sound
             const audio = new Audio('/rocket-sound.mp3'); // Placeholder path
             audio.volume = 0.5;
@@ -32,7 +34,7 @@ export const SalesAlert: React.FC<SalesAlertProps> = ({ isVisible = false, selle
                 audio.currentTime = 0;
             };
         }
-    }, [isVisible, onComplete]);
+    }, [isVisible, onComplete, saleId, sellerName]);
 
     return (
         <AnimatePresence>
@@ -49,7 +51,7 @@ export const SalesAlert: React.FC<SalesAlertProps> = ({ isVisible = false, selle
 
                         {/* Rocket Container - Animating Upwards with Framer Motion */}
                         <motion.div
-                            key={`rocket-${sellerName}-${Date.now()}`} // Force re-render for every new alert
+                            key={saleId ? `rocket-${saleId}` : `rocket-${Date.now()}`} // Use stable saleId with fallback
                             initial={{ y: "100vh", x: "-50%" }}
                             animate={{ y: "-150vh" }}
                             // Prevent exit animation from interfering with rocket flight if it happens early
