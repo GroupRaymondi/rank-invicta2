@@ -85,14 +85,22 @@ const DashboardContent = () => {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'sales_processes' }, (payload) => {
         console.log('New Sale Detected:', payload);
         const newSale = payload.new as {
-          seller_id: string;
-          seller_name: string;
+          responsible_id: string;
           process_type_name: string;
-          paid_amount: number;
+          paid_amount: string | number;
         };
 
+        // Find seller name from profiles
+        const sellerProfile = profiles.find(p => p.id === newSale.responsible_id);
+        const sellerName = sellerProfile ? sellerProfile.full_name : 'Vendedor';
+
+        // Parse amount (ensure it's a number)
+        const entryValue = typeof newSale.paid_amount === 'string'
+          ? parseFloat(newSale.paid_amount)
+          : newSale.paid_amount;
+
         // Trigger Alert with detailed info
-        triggerAlert(newSale.seller_name, newSale.process_type_name, newSale.paid_amount);
+        triggerAlert(sellerName, newSale.process_type_name, entryValue);
 
         // Also refresh data to ensure ranking is up to date
         fetchData();
