@@ -1,4 +1,4 @@
-import { useMemo, useEffect, useState } from 'react';
+import { useMemo, useEffect, useState, useRef } from 'react';
 import { DashboardLayout } from './components/layout/DashboardLayout';
 
 import { KPICards } from './components/dashboard/KPICards';

@@ -8,11 +8,11 @@ interface SalesAlertProps {
     sellerAvatar?: string;
     processName?: string;
     entryValue?: number;
-    value?: number; // Keeping for backward compatibility or total value if needed
+
     onComplete?: () => void;
 }
 
-export const SalesAlert: React.FC<SalesAlertProps> = ({ isVisible = false, sellerName, sellerAvatar, processName, entryValue, value, onComplete }) => {
+export const SalesAlert: React.FC<SalesAlertProps> = ({ isVisible = false, sellerName, sellerAvatar, processName, entryValue, onComplete }) => {
     React.useEffect(() => {
         if (isVisible) {
             // Play rocket sound
