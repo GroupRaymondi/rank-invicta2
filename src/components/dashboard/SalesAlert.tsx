@@ -38,6 +38,7 @@ export const SalesAlert: React.FC<SalesAlertProps> = ({ isVisible = false, selle
         <AnimatePresence>
             {isVisible && (
                 <motion.div
+                    key="sales-alert-overlay"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
