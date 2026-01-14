@@ -95,7 +95,7 @@ export const SalesAlert: React.FC<SalesAlertProps> = ({ isVisible = false, selle
                             </div>
 
                             {/* Seller Name */}
-                            <h2 className="text-6xl font-black text-white uppercase tracking-tighter text-glow drop-shadow-2xl mb-8 text-center">
+                            <h2 className="text-4xl md:text-5xl font-black text-white uppercase tracking-tighter text-glow drop-shadow-2xl mb-8 text-center max-w-5xl px-4 leading-tight">
                                 {sellerName}
                             </h2>
 

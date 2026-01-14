@@ -1,4 +1,4 @@
-import { useMemo, useEffect, useState, useRef } from 'react';
+import { useMemo, useEffect, useState, useRef, useCallback } from 'react';
 import { DashboardLayout } from './components/layout/DashboardLayout';
 
 import { KPICards } from './components/dashboard/KPICards';
@@ -217,10 +217,10 @@ const DashboardContent = () => {
     processNextInQueue();
   }, [alertQueue, alertData.isVisible, profiles]);
 
-  const handleAlertComplete = () => {
+  const handleAlertComplete = useCallback(() => {
     setAlertData(prev => ({ ...prev, isVisible: false }));
     isProcessingAlert.current = false;
-  };
+  }, []);
 
   // Process Data
   const processedData = useMemo(() => {
