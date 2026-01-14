@@ -139,8 +139,25 @@ const DashboardContent = () => {
       const nextSale = alertQueue[0];
 
       try {
-        // Determine the correct seller ID: created_by -> seller_id -> responsible_id
-        const targetSellerId = nextSale.created_by || nextSale.seller_id || nextSale.responsible_id;
+        // Explicitly fetch the sale to get the correct created_by
+        // The realtime payload might be incomplete or we want to be 100% sure
+        const { data: saleData, error: saleError } = await supabase
+          .from('sales_processes')
+          .select('created_by, responsible_id')
+          .eq('id', nextSale.id)
+          .single();
+
+        if (saleError) {
+          console.error('Error fetching sale details for alert:', saleError);
+        }
+
+        // Determine the correct seller ID: 
+        // 1. Fetched created_by (Most reliable)
+        // 2. Payload created_by
+        // 3. Payload seller_id
+        // 4. Fetched responsible_id
+        // 5. Payload responsible_id
+        const targetSellerId = saleData?.created_by || nextSale.created_by || nextSale.seller_id || saleData?.responsible_id || nextSale.responsible_id;
 
         if (!targetSellerId) {
           console.warn('No valid seller ID found for sale:', nextSale.id);
