@@ -51,7 +51,12 @@ export const SalesAlert: React.FC<SalesAlertProps> = ({ isVisible = false, selle
                         <motion.div
                             initial={{ y: "100vh", x: "-50%" }}
                             animate={{ y: "-150vh" }}
-                            transition={{ duration: 12, ease: "easeInOut" }}
+                            // Prevent exit animation from interfering with rocket flight if it happens early
+                            exit={{ opacity: 0 }}
+                            transition={{
+                                y: { duration: 12, ease: "easeInOut" },
+                                default: { duration: 0.5 }
+                            }}
                             className="absolute left-1/2 flex flex-col items-center z-30"
                         >
                             {/* Rocket Image */}
