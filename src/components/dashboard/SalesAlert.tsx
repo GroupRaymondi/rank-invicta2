@@ -21,10 +21,10 @@ export const SalesAlert: React.FC<SalesAlertProps> = ({ isVisible = false, selle
             audio.volume = 0.5;
             audio.play().catch(e => console.error("Audio play failed", e));
 
-            // Auto hide after 12 seconds
+            // Auto hide after 15 seconds (12s rocket + 3s hold)
             const timer = setTimeout(() => {
                 if (onComplete) onComplete();
-            }, 12000);
+            }, 15000);
 
             return () => {
                 clearTimeout(timer);
