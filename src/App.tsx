@@ -34,6 +34,7 @@ const DashboardContent = () => {
   const [alertData, setAlertData] = useState<{
     isVisible: boolean;
     sellerName?: string;
+    sellerAvatar?: string;
     processName?: string;
     entryValue?: number;
   }>({ isVisible: false });
@@ -90,9 +91,10 @@ const DashboardContent = () => {
           paid_amount: string | number;
         };
 
-        // Find seller name from profiles
+        // Find seller name and avatar from profiles
         const sellerProfile = profiles.find(p => p.id === newSale.responsible_id);
         const sellerName = sellerProfile ? sellerProfile.full_name : 'Vendedor';
+        const sellerAvatar = sellerProfile ? sellerProfile.avatar_url : undefined;
 
         // Parse amount (ensure it's a number)
         const entryValue = typeof newSale.paid_amount === 'string'
@@ -100,7 +102,7 @@ const DashboardContent = () => {
           : newSale.paid_amount;
 
         // Trigger Alert with detailed info
-        triggerAlert(sellerName, newSale.process_type_name, entryValue);
+        triggerAlert(sellerName, sellerAvatar, newSale.process_type_name, entryValue);
 
         // Also refresh data to ensure ranking is up to date
         fetchData();
@@ -111,13 +113,14 @@ const DashboardContent = () => {
       salesSubscription.unsubscribe();
       newSaleSubscription.unsubscribe();
     };
-  }, []); // Removed user dependency
+  }, [profiles]); // Added profiles dependency to ensure lookup works
 
-  const triggerAlert = (sellerName: string, processName: string, entryValue: number) => {
+  const triggerAlert = (sellerName: string, sellerAvatar: string | undefined, processName: string, entryValue: number) => {
     console.log('Triggering alert for:', sellerName, 'Process:', processName, 'Value:', entryValue);
     setAlertData({
       isVisible: true,
       sellerName: sellerName,
+      sellerAvatar: sellerAvatar,
       processName: processName,
       entryValue: entryValue
     });
@@ -266,6 +269,7 @@ const DashboardContent = () => {
       <SalesAlert
         isVisible={alertData.isVisible}
         sellerName={alertData.sellerName}
+        sellerAvatar={alertData.sellerAvatar}
         processName={alertData.processName}
         entryValue={alertData.entryValue}
         onComplete={() => setAlertData(prev => ({ ...prev, isVisible: false }))}
