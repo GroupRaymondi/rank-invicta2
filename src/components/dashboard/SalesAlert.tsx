@@ -36,62 +36,88 @@ export const SalesAlert: React.FC<SalesAlertProps> = ({ isVisible = false, selle
     if (!isVisible) return null;
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md transition-opacity duration-500">
-            <div className="relative flex flex-col items-center animate-bounce duration-[3000ms]">
-                <div className="relative flex flex-col items-center">
-                    <div className="absolute -inset-20 bg-primary/30 rounded-full blur-3xl animate-pulse"></div>
+        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/90 backdrop-blur-md transition-opacity duration-500 pb-10">
+            <div className="relative flex flex-col items-center w-full h-full justify-end">
 
-                    {/* Custom Rocket Image */}
+                {/* Rocket Container - Animating Upwards */}
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex flex-col items-center animate-[rocket-fly_12s_ease-in-out_forwards] z-30">
+                    {/* Rocket Image */}
                     <img
                         src="/rocket-custom.png"
                         alt="Rocket"
-                        className="w-80 h-auto relative z-10 drop-shadow-[0_0_50px_rgba(14,165,233,0.8)] animate-rocket-launch mb-8"
+                        className="w-96 h-auto drop-shadow-[0_0_50px_rgba(14,165,233,0.8)] mb-4"
                     />
 
-                    {/* Seller Avatar - Positioned centrally or below rocket */}
-                    {sellerAvatar ? (
-                        <div className="relative z-20 -mt-16 mb-6">
-                            <div className="w-32 h-32 rounded-full border-4 border-yellow-500 shadow-[0_0_30px_rgba(234,179,8,0.6)] overflow-hidden">
+                    {/* Fire/Thrust Effect (Optional visual enhancement) */}
+                    <div className="w-4 h-20 bg-orange-500 blur-xl animate-pulse absolute bottom-10 opacity-80"></div>
+                </div>
+
+                {/* Content Card - Fades in and stays or moves slightly */}
+                <div className="relative z-40 flex flex-col items-center animate-[fade-in-up_1s_ease-out_0.5s_forwards] opacity-0 mb-20">
+
+                    {/* Avatar */}
+                    <div className="relative mb-6">
+                        <div className="w-40 h-40 rounded-full border-4 border-yellow-500 shadow-[0_0_40px_rgba(234,179,8,0.6)] overflow-hidden bg-gray-800">
+                            {sellerAvatar ? (
                                 <img src={sellerAvatar} alt={sellerName} className="w-full h-full object-cover" />
-                            </div>
-                            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-yellow-500 text-black text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-lg">
-                                Vendedor
-                            </div>
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center text-5xl font-bold text-white">
+                                    {sellerName?.charAt(0)}
+                                </div>
+                            )}
                         </div>
-                    ) : (
-                        <div className="relative z-20 -mt-16 mb-6 w-32 h-32 rounded-full bg-gray-800 border-4 border-gray-600 flex items-center justify-center text-4xl font-bold text-white">
-                            {sellerName?.charAt(0)}
+                        <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-yellow-600 to-yellow-400 text-black text-sm font-black px-6 py-1.5 rounded-full uppercase tracking-widest shadow-lg whitespace-nowrap">
+                            Nova Venda
                         </div>
-                    )}
+                    </div>
+
+                    {/* Seller Name */}
+                    <h2 className="text-6xl font-black text-white uppercase tracking-tighter text-glow drop-shadow-2xl mb-8 text-center">
+                        {sellerName}
+                    </h2>
+
+                    {/* Details Row: Process & Value */}
+                    <div className="flex items-center gap-8 bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-sm shadow-2xl">
+
+                        {/* Process Name */}
+                        {processName && (
+                            <div className="flex flex-col items-center px-6 border-r border-white/10">
+                                <span className="text-sm text-blue-300 uppercase tracking-widest font-bold mb-1">Processo</span>
+                                <span className="text-3xl text-white font-bold tracking-wide uppercase">{processName}</span>
+                            </div>
+                        )}
+
+                        {/* Entry Value */}
+                        {entryValue !== undefined && (
+                            <div className="flex flex-col items-center px-6">
+                                <span className="text-sm text-green-400 uppercase tracking-widest font-bold mb-1">Entrada</span>
+                                <span className="text-4xl text-green-400 font-black tracking-widest drop-shadow-[0_0_15px_rgba(34,197,94,0.5)]">
+                                    {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(entryValue)}
+                                </span>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
-                <h2 className="text-6xl font-black text-white mt-4 uppercase tracking-tighter text-glow animate-pulse">
-                    Nova Venda!
-                </h2>
-
-                <div className="mt-6 text-center space-y-4 relative z-20">
-                    <p className="text-5xl text-white font-bold tracking-wide drop-shadow-lg">{sellerName}</p>
-
-                    {processName && (
-                        <p className="text-3xl text-blue-300 font-bold tracking-wider uppercase drop-shadow-md">{processName}</p>
-                    )}
-
-                    {entryValue !== undefined && (
-                        <div className="inline-block bg-green-500/20 border border-green-500/40 rounded-full px-12 py-5 shadow-[0_0_40px_rgba(34,197,94,0.5)] mt-6 transform scale-110">
-                            <p className="text-5xl text-green-400 font-black tracking-widest">
-                                {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(entryValue)}
-                            </p>
-                            <p className="text-sm text-green-500/80 uppercase tracking-[0.3em] font-bold mt-2">Valor de Entrada</p>
-                        </div>
-                    )}
-                </div>
-
-                <div className="absolute top-0 right-0 -mt-20 -mr-20">
-                    <Bell className="w-24 h-24 text-yellow-400 animate-ping-slow drop-shadow-[0_0_20px_rgba(250,204,21,0.6)]" />
+                {/* Background Effects */}
+                <div className="absolute inset-0 pointer-events-none">
+                    <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[100px] animate-pulse"></div>
+                    <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-[100px] animate-pulse delay-700"></div>
                 </div>
             </div>
 
-            {/* Confetti or Particles could be added here */}
+            {/* Global Styles for Custom Keyframes if not in Tailwind config */}
+            <style>{`
+                @keyframes rocket-fly {
+                    0% { transform: translateY(100vh) translateX(-50%); opacity: 0; }
+                    10% { opacity: 1; }
+                    100% { transform: translateY(-120vh) translateX(-50%); opacity: 1; }
+                }
+                @keyframes fade-in-up {
+                    0% { transform: translateY(50px); opacity: 0; }
+                    100% { transform: translateY(0); opacity: 1; }
+                }
+            `}</style>
         </div>
     );
 };
