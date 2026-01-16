@@ -109,31 +109,39 @@ const DashboardContent = () => {
       })
       .subscribe();
 
-    // Realtime Subscription for New Sales Alerts (Individual Processes)
+    // Realtime Subscription for New Sales Alerts (Sales Events)
     const newSaleSubscription = supabase
       .channel('new_sale_alerts')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'sales_processes' }, (payload) => {
-        console.log('New Sale Detected:', payload);
-        const newSale = payload.new as {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'sales_events' }, (payload) => {
+        console.log('New Sale Event Detected:', payload);
+        const newEvent = payload.new as {
           id: string;
-          responsible_id: string;
-          created_by?: string; // Capture created_by
-          seller_id?: string;  // Capture seller_id
-          process_type_name: string;
-          paid_amount: string | number;
+          seller_id: string;
+          seller_name: string;
+          sale_value: string | number;
+          entry_value: string | number;
+          process_type: string;
+          sales_process_id: string;
         };
 
-        // De-duplication check
-        if (processedSaleIds.current.has(newSale.id)) {
-          console.log('Duplicate sale ignored:', newSale.id);
+        // De-duplication check (using event ID)
+        if (processedSaleIds.current.has(newEvent.id)) {
+          console.log('Duplicate event ignored:', newEvent.id);
           return;
         }
 
         // Add to processed set
-        processedSaleIds.current.add(newSale.id);
+        processedSaleIds.current.add(newEvent.id);
 
         // Add to Queue
-        setAlertQueue(prev => [...prev, newSale]);
+        setAlertQueue(prev => [...prev, {
+          id: newEvent.sales_process_id, // Use process ID for consistency if needed, or event ID
+          responsible_id: newEvent.seller_id,
+          process_type_name: newEvent.process_type,
+          paid_amount: newEvent.entry_value,
+          // Extra fields from event
+          seller_name: newEvent.seller_name
+        }]);
 
         // Also refresh data to ensure ranking is up to date
         fetchData();
@@ -155,71 +163,17 @@ const DashboardContent = () => {
       const nextSale = alertQueue[0];
 
       try {
-        // Explicitly fetch the sale to get details including client_id
-        // The realtime payload might be incomplete or we want to be 100% sure
-        // Explicitly fetch the sale to get details including client_id
-        // The realtime payload might be incomplete or we want to be 100% sure
-        const { data: saleData, error: saleError } = await supabase
-          .from('sales_processes')
-          .select('created_by, responsible_id, client_id, process_type_name, paid_amount')
-          .eq('id', nextSale.id)
-          .single();
-
-        if (saleError) {
-          console.error('Error fetching sale details for alert:', saleError);
-        }
-
-        let targetSellerId = saleData?.responsible_id || nextSale.responsible_id || nextSale.seller_id;
-
-        // If we have a client_id, try to find the seller assigned to that client
-        // This is the "Source of Truth" for who owns the client
-        const clientId = saleData?.client_id; // Note: payload might not have client_id, so rely on fetch
-
-        if (clientId) {
-          const { data: clientData } = await supabase
-            .from('clients')
-            .select('seller_id')
-            .eq('id', clientId)
-            .single();
-
-          if (clientData && clientData.seller_id) {
-            console.log('Found Seller via Client:', clientData.seller_id);
-            targetSellerId = clientData.seller_id;
-          }
-        }
-
-        // Fallback to created_by if still nothing (though unlikely if logic is correct)
-        if (!targetSellerId) {
-          targetSellerId = saleData?.created_by || nextSale.created_by;
-        }
-
-        if (!targetSellerId) {
-          console.warn('No valid seller ID found for sale:', nextSale.id);
-          // Skip this alert but remove from queue to avoid blocking
-          setAlertQueue(prev => prev.slice(1));
-          isProcessingAlert.current = false;
-          return;
-        }
-
-        // Find seller name and avatar from profiles (Local Lookup)
-        let sellerProfile = profiles.find(p => p.id === targetSellerId);
-
-        console.log('Processing Alert:', {
-          saleId: nextSale.id,
-          targetSellerId,
-          foundProfile: !!sellerProfile,
-          clientId,
-          payloadCreatedBy: nextSale.created_by,
-          fetchedCreatedBy: saleData?.created_by
-        });
+        // Find seller avatar from profiles (Local Lookup)
+        // We already have the name from the event, but we need the avatar
+        let sellerProfile = profiles.find(p => p.id === nextSale.responsible_id);
 
         // On-Demand Fetch if not found locally
         if (!sellerProfile) {
-          console.log('Seller not found locally, fetching from DB:', targetSellerId);
+          console.log('Seller not found locally, fetching from DB:', nextSale.responsible_id);
           const { data } = await supabase
             .from('profiles')
             .select('id, full_name, avatar_url, team')
-            .eq('id', targetSellerId)
+            .eq('id', nextSale.responsible_id)
             .single();
 
           if (data) {
@@ -229,25 +183,15 @@ const DashboardContent = () => {
           }
         }
 
-
-
-        // Format Name: First + Last only
-        let sellerName = 'Vendedor';
-        if (sellerProfile && sellerProfile.full_name) {
-          const parts = sellerProfile.full_name.trim().split(/\s+/);
-          if (parts.length > 1) {
-            sellerName = `${parts[0]} ${parts[parts.length - 1]}`;
-          } else {
-            sellerName = parts[0];
-          }
-        }
         const sellerAvatar = sellerProfile ? sellerProfile.avatar_url : undefined;
+        // Use name from event if available, otherwise fallback to profile
+        // The event has the snapshot of the name at time of sale, which is good
+        const sellerName = (nextSale as any).seller_name || (sellerProfile?.full_name || 'Vendedor');
 
         // Parse amount (ensure it's a number)
-        const rawAmount = saleData?.paid_amount ?? nextSale.paid_amount;
-        const entryValue = typeof rawAmount === 'string'
-          ? parseFloat(rawAmount)
-          : rawAmount;
+        const entryValue = typeof nextSale.paid_amount === 'string'
+          ? parseFloat(nextSale.paid_amount)
+          : nextSale.paid_amount;
 
         // Trigger Alert
         setAlertData({
@@ -255,7 +199,7 @@ const DashboardContent = () => {
           id: nextSale.id, // Pass sale ID
           sellerName,
           sellerAvatar,
-          processName: saleData?.process_type_name || nextSale.process_type_name,
+          processName: nextSale.process_type_name,
           entryValue
         });
 
