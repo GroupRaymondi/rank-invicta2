@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -6,11 +6,14 @@
 
 @layer base {
   body {
-    @apply bg-[#021029] text-white font-sans antialiased selection:bg-primary/30 selection:text-primary-foreground;
-    background-image:
-      radial-gradient(circle at 50% 0%, rgba(14, 165, 233, 0.15) 0%, transparent 50%),
-      radial-gradient(circle at 0% 50%, rgba(14, 165, 233, 0.05) 0%, transparent 50%),
-      radial-gradient(circle at 100% 50%, rgba(14, 165, 233, 0.05) 0%, transparent 50%);
+    @apply bg-[#021029] text-white font-sans antialiased;
+  }
+
+  /* Text Selection (SEM depender de primary/primary-foreground) */
+  ::selection {
+    background: rgba(234, 179, 8, 0.30);
+    /* amarelo suave */
+    color: #ffffff;
   }
 
   /* Custom Scrollbar */
@@ -20,29 +23,51 @@
   }
 
   ::-webkit-scrollbar-track {
-    @apply bg-transparent;
+    background: transparent;
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-white/10 rounded-full hover:bg-white/20 transition-colors;
+    background: rgba(255, 255, 255, 0.10);
+    border-radius: 9999px;
+    transition: background-color 0.2s ease;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.20);
   }
 }
 
 @layer utilities {
   .glass {
-    @apply bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] shadow-[0_8px_32px_0_rgba(0, 0, 0, 0.36)];
+    background: rgba(255, 255, 255, 0.03);
+    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.36);
   }
 
   .glass-card {
-    @apply bg-white/[0.02] backdrop-blur-lg border border-white/[0.05] shadow-lg hover:bg-white/[0.04] transition-all duration-300;
+    background: rgba(255, 255, 255, 0.02);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+    transition: all 300ms ease;
+  }
+
+  .glass-card:hover {
+    background: rgba(255, 255, 255, 0.04);
   }
 
   .glass-strong {
-    @apply bg-[#021029]/80 backdrop-blur-xl border-b border-white/[0.08];
+    background: rgba(5, 5, 5, 0.80);
+    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(24px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   }
 
   .text-glow {
-    text-shadow: 0 0 20px rgba(14, 165, 233, 0.6);
+    text-shadow: 0 0 20px rgba(234, 179, 8, 0.6);
   }
 
   .text-glow-accent {

@@ -60,6 +60,16 @@ const DashboardContent = () => {
 
     const fetchData = async () => {
       try {
+        // Fetch Roles (Only VENDEDOR)
+        const { data: rolesData, error: rolesError } = await supabase
+          .from('user_roles')
+          .select('user_id')
+          .eq('role', 'vendedor');
+
+        if (rolesError) throw rolesError;
+
+        const vendorIds = new Set(rolesData?.map(r => r.user_id) || []);
+
         // Fetch Profiles
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
@@ -68,6 +78,10 @@ const DashboardContent = () => {
 
         if (profilesError) throw profilesError;
 
+        // Filter profiles to only include vendors
+        const vendorProfiles = (profilesData || []).filter(p => vendorIds.has(p.id));
+        setProfiles(vendorProfiles);
+
         // Fetch Sales
         const { data: salesData, error: salesError } = await supabase
           .from('seller_monthly_sales')
@@ -75,7 +89,6 @@ const DashboardContent = () => {
 
         if (salesError) throw salesError;
 
-        setProfiles(profilesData || []);
         setSales(salesData || []);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -399,11 +412,10 @@ const DashboardContent = () => {
             >
               TEST ALERT 🚀
             </button>
-            <div className="w-24 h-24 relative group mb-1">
-              <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <img src="/logo.png" alt="Invicta Consulting" className="w-full h-full object-contain drop-shadow-[0_0_20px_rgba(14,165,233,0.3)] relative z-10" />
+            <div className="w-28 h-28 relative mb-4">
+              <img src="/logo-new.png" alt="Invicta Consulting" className="w-full h-full object-contain relative z-10" />
             </div>
-            <h1 className="text-3xl font-black tracking-tight text-white uppercase tracking-widest text-glow text-center drop-shadow-lg">
+            <h1 className="text-3xl font-black tracking-tight text-white uppercase tracking-widest text-glow-accent text-center drop-shadow-lg">
               INVICTA MATRIZ
             </h1>
           </div>

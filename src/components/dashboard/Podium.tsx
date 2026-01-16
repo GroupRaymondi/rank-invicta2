@@ -30,7 +30,7 @@ const PodiumStep: React.FC<{ winner: Winner }> = ({ winner }) => {
             )}>
                 {isFirst && (
                     <>
-                        <Crown className="absolute -top-16 text-yellow-500 w-20 h-20 animate-bounce drop-shadow-[0_0_15px_rgba(234,179,8,0.8)]" />
+                        <Crown className="absolute -top-20 text-yellow-500 w-20 h-20 animate-bounce drop-shadow-[0_0_15px_rgba(234,179,8,0.8)]" />
                         <Sparkles className="absolute -top-16 -right-6 text-yellow-200 w-10 h-10 animate-pulse" />
                         <Sparkles className="absolute -top-6 -left-6 text-yellow-200 w-8 h-8 animate-pulse delay-100" />
                     </>

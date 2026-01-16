@@ -9,9 +9,9 @@ export default {
             colors: {
                 background: "#021029",
                 primary: {
-                    DEFAULT: "#0EA5E9",
-                    foreground: "#FFFFFF",
-                    hover: "#38BDF8",
+                    DEFAULT: "#EAB308", // Gold/Yellow-500
+                    foreground: "#000000",
+                    hover: "#FACC15", // Yellow-400
                 },
                 accent: {
                     DEFAULT: "#FACC15",

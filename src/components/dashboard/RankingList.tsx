@@ -71,14 +71,14 @@ const RankItem: React.FC<{ seller: Seller; index: number }> = ({ seller, index }
 
             {/* Stats */}
             <div className="text-right">
-                <div className="flex items-center justify-end gap-1.5 text-sm font-medium text-primary">
+                <div className="flex items-center justify-end gap-1.5 text-sm font-medium text-yellow-500">
                     {hasNoSales ? (
                         <div className="flex items-center justify-end">
                             <Siren className="w-6 h-6 text-red-600 fill-red-600 animate-[pulse_0.5s_ease-in-out_infinite] drop-shadow-[0_0_15px_rgba(220,38,38,1)]" />
                         </div>
                     ) : (
                         <div className="flex flex-col items-end justify-center">
-                            <span className="text-2xl font-bold text-primary drop-shadow-[0_0_10px_rgba(14,165,233,0.5)]">
+                            <span className="text-2xl font-bold text-yellow-500 drop-shadow-[0_0_10px_rgba(234,179,8,0.5)]">
                                 {seller.deals}
                             </span>
                             <span className="text-[10px] text-white/40 uppercase tracking-wider font-medium">
@@ -128,11 +128,11 @@ export const RankingList: React.FC<RankingListProps> = ({ sellers }) => {
     return (
         <div className="bg-[#021029]/80 backdrop-blur-xl rounded-3xl border border-white/10 p-5 h-full flex flex-col shadow-2xl relative overflow-hidden group">
             {/* Background Glow */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+            <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
 
             <div className="flex items-center justify-between mb-6 relative z-10">
                 <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-xl bg-primary/10 border border-primary/20 text-primary group-hover:scale-110 transition-transform duration-300 shadow-[0_0_15px_rgba(14,165,233,0.2)]">
+                    <div className="p-2 rounded-xl bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 group-hover:scale-110 transition-transform duration-300 shadow-[0_0_15px_rgba(234,179,8,0.2)]">
                         <TrendingUp className="w-5 h-5" />
                     </div>
                     <h2 className="text-lg font-bold text-white tracking-wide uppercase">Ranking Geral</h2>

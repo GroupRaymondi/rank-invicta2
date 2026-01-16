@@ -41,7 +41,7 @@ const TeamCard: React.FC<{ team: Team }> = ({ team }) => (
                         )}>
                             {team.name}
                         </h3>
-                        <div className="flex items-center gap-1 text-primary">
+                        <div className="flex items-center gap-1 text-yellow-500">
                             <Target className="w-3 h-3" />
                             <span className="font-bold text-sm">{team.processes}</span>
                         </div>
@@ -55,7 +55,7 @@ const TeamCard: React.FC<{ team: Team }> = ({ team }) => (
                                 team.rank === 1 ? "bg-yellow-500" :
                                     team.rank === 2 ? "bg-gray-300" :
                                         team.rank === 3 ? "bg-amber-700" :
-                                            "bg-primary"
+                                            "bg-yellow-500/70"
                             )}
                             style={{ width: `${Math.min((team.processes / 50) * 100, 100)}%` }}
                         />
@@ -100,11 +100,11 @@ export const TeamGrid: React.FC<TeamGridProps> = ({ teams }) => {
     return (
         <div className="bg-[#021029]/80 backdrop-blur-xl rounded-2xl border border-white/10 p-4 h-full flex flex-col shadow-2xl relative overflow-hidden">
             {/* Background Glow */}
-            <div className="absolute bottom-0 left-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2 pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-yellow-500/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2 pointer-events-none" />
 
             <div className="flex items-center justify-between mb-4 relative z-10 flex-none">
                 <div className="flex items-center gap-2">
-                    <div className="p-1.5 rounded-lg bg-primary/10 border border-primary/20 text-primary shadow-[0_0_15px_rgba(14,165,233,0.2)]">
+                    <div className="p-1.5 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.2)]">
                         <Trophy className="w-4 h-4" />
                     </div>
                     <h2 className="text-sm font-bold text-white tracking-wide uppercase">Ranking de Equipes</h2>

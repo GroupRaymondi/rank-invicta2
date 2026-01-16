@@ -12,7 +12,7 @@ const RECENT_SALES = [
 export const SalesTicker: React.FC = () => {
     return (
         <div className="fixed bottom-0 left-0 right-0 bg-background/90 border-t border-white/10 backdrop-blur-md h-12 flex items-center overflow-hidden z-50">
-            <div className="bg-primary px-6 h-full flex items-center font-bold text-black uppercase tracking-wider text-sm z-10 shadow-lg">
+            <div className="bg-yellow-500 px-6 h-full flex items-center font-bold text-black uppercase tracking-wider text-sm z-10 shadow-lg">
                 Últimas Vendas
             </div>
 
@@ -23,7 +23,7 @@ export const SalesTicker: React.FC = () => {
                             <span className="text-gray-400 font-medium">{sale.time}</span>
                             <span className="font-bold text-white">{sale.name}</span>
                             <span className="text-gray-500 text-xs">({sale.team})</span>
-                            <span className="flex items-center text-accent font-bold">
+                            <span className="flex items-center text-yellow-500 font-bold">
                                 <DollarSign className="w-3 h-3" />
                                 {sale.amount.toLocaleString('en-US')}
                             </span>

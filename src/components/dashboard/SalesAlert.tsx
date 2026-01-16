@@ -94,7 +94,7 @@ const SideConfetti = () => {
                     }}
                     className="absolute bottom-0 left-0 w-3 h-6 rounded-sm" // Rectangular confetti shape
                     style={{
-                        backgroundColor: ['#ef4444', '#3b82f6', '#22c55e', '#eab308', '#a855f7', '#ec4899'][Math.floor(Math.random() * 6)],
+                        backgroundColor: ['#eab308', '#facc15', '#fbbf24', '#f59e0b', '#d97706', '#b45309'][Math.floor(Math.random() * 6)],
                     }}
                 />
             ))}
@@ -197,7 +197,7 @@ export const SalesAlert: React.FC<SalesAlertProps> = ({ isVisible = false, saleI
             // Auto hide after 15 seconds (12s rocket + 3s hold)
             const timer = setTimeout(() => {
                 if (onComplete) onComplete();
-            }, 15000);
+            }, 18000);
 
             return () => {
                 clearTimeout(timer);
@@ -240,7 +240,7 @@ export const SalesAlert: React.FC<SalesAlertProps> = ({ isVisible = false, saleI
                             animate={{ y: "-150vh" }}
                             exit={{ opacity: 0 }}
                             transition={{
-                                y: { duration: 12, ease: "easeInOut" },
+                                y: { duration: 15, ease: "easeInOut" },
                                 default: { duration: 0.5 }
                             }}
                             className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center z-50"
