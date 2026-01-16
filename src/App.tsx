@@ -9,7 +9,7 @@ import { Podium } from './components/dashboard/Podium';
 // import { AuthProvider, useAuth } from './contexts/AuthContext';
 // import { Login } from './pages/Login';
 import { supabase } from './lib/supabase';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Maximize2 } from 'lucide-react';
 
 // Types for Supabase Data
 interface Profile {
@@ -157,9 +157,11 @@ const DashboardContent = () => {
       try {
         // Explicitly fetch the sale to get details including client_id
         // The realtime payload might be incomplete or we want to be 100% sure
+        // Explicitly fetch the sale to get details including client_id
+        // The realtime payload might be incomplete or we want to be 100% sure
         const { data: saleData, error: saleError } = await supabase
           .from('sales_processes')
-          .select('created_by, responsible_id, client_id')
+          .select('created_by, responsible_id, client_id, process_type_name, paid_amount')
           .eq('id', nextSale.id)
           .single();
 
@@ -242,9 +244,10 @@ const DashboardContent = () => {
         const sellerAvatar = sellerProfile ? sellerProfile.avatar_url : undefined;
 
         // Parse amount (ensure it's a number)
-        const entryValue = typeof nextSale.paid_amount === 'string'
-          ? parseFloat(nextSale.paid_amount)
-          : nextSale.paid_amount;
+        const rawAmount = saleData?.paid_amount ?? nextSale.paid_amount;
+        const entryValue = typeof rawAmount === 'string'
+          ? parseFloat(rawAmount)
+          : rawAmount;
 
         // Trigger Alert
         setAlertData({
@@ -252,7 +255,7 @@ const DashboardContent = () => {
           id: nextSale.id, // Pass sale ID
           sellerName,
           sellerAvatar,
-          processName: nextSale.process_type_name,
+          processName: saleData?.process_type_name || nextSale.process_type_name,
           entryValue
         });
 
@@ -357,6 +360,16 @@ const DashboardContent = () => {
     return { sellers, teams, totalProcesses };
   }, [profiles, sales]);
 
+  const toggleFullScreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#020617]">
@@ -367,6 +380,9 @@ const DashboardContent = () => {
 
   return (
     <DashboardLayout className="p-4 gap-4">
+      {/* Fullscreen Toggle */}
+
+
       {/* Header Removed */}
 
       <div className="flex-1 grid grid-cols-12 gap-4 min-h-0">
@@ -382,36 +398,7 @@ const DashboardContent = () => {
           {/* 1. Logo & Name (Top) */}
           <div className="flex-none flex flex-col items-center justify-start relative z-20 pt-10">
             {/* Test Button (Only for testing) */}
-            <button
-              onClick={() => {
-                // Pick a random profile
-                const randomProfile = profiles.length > 0
-                  ? profiles[Math.floor(Math.random() * profiles.length)]
-                  : { id: 'test-id' };
 
-                // Cycle through test values: 500 -> 1000 -> 2500 -> 5000
-                const testValues = [500, 1000, 2500, 5000];
-                // We use a simple way to cycle by storing index in a global or just random for now if state is tricky
-                // Let's use random from this specific set to ensure we see all cases eventually, 
-                // OR better: let's use the current length of alertQueue to determine the index? No, that changes.
-                // Let's just pick one of the 4 scenarios randomly for now, as adding state might be complex with partial view.
-                // User asked to "mesclar", random is a form of mixing.
-                // actually, let's try to be smarter.
-                const testValue = testValues[Math.floor(Math.random() * testValues.length)];
-
-                const mockSale = {
-                  id: `test-${Date.now()}`,
-                  responsible_id: randomProfile.id,
-                  created_by: randomProfile.id,
-                  process_type_name: ['VISTO T', 'GREEN CARD', 'CIDADANIA', 'CONSULTORIA'][Math.floor(Math.random() * 4)],
-                  paid_amount: testValue
-                };
-                setAlertQueue(prev => [...prev, mockSale]);
-              }}
-              className="fixed bottom-4 right-4 z-[200] bg-red-600 text-white px-4 py-2 rounded-lg font-bold shadow-lg hover:bg-red-700 transition-colors"
-            >
-              TEST ALERT 🚀
-            </button>
             <div className="w-28 h-28 relative mb-4">
               <img src="/logo-new.png" alt="Invicta Consulting" className="w-full h-full object-contain relative z-10" />
             </div>
@@ -450,6 +437,54 @@ const DashboardContent = () => {
         <div className="col-span-3 h-full animate-slide-up" style={{ animationDelay: '0.3s' }}>
           <TeamGrid teams={processedData.teams} />
         </div>
+      </div>
+
+      {/* Controls Container (Bottom Right) */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3 items-end opacity-0 hover:opacity-100 transition-opacity duration-500">
+
+        {/* Presentation Mode Button */}
+        <button
+          onClick={toggleFullScreen}
+          className="group flex items-center gap-3 px-4 py-3 bg-slate-900/80 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl border border-white/10 hover:border-white/20 backdrop-blur-md transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1"
+          title="Modo Apresentação"
+        >
+          <span className="text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 -translate-x-2 group-hover:translate-x-0">
+            Modo Apresentação
+          </span>
+          <div className="p-1 rounded-lg bg-white/5 group-hover:bg-white/10 transition-colors">
+            <Maximize2 className="w-5 h-5" />
+          </div>
+        </button>
+
+        {/* Test Alert Button */}
+        <button
+          onClick={() => {
+            const randomProfile = profiles.length > 0
+              ? profiles[Math.floor(Math.random() * profiles.length)]
+              : { id: 'test-id' };
+
+            const testValues = [500, 1000, 2500, 5000];
+            const testValue = testValues[Math.floor(Math.random() * testValues.length)];
+
+            const mockSale = {
+              id: `test-${Date.now()}`,
+              responsible_id: randomProfile.id,
+              created_by: randomProfile.id,
+              process_type_name: ['VISTO T', 'GREEN CARD', 'CIDADANIA', 'CONSULTORIA'][Math.floor(Math.random() * 4)],
+              paid_amount: testValue
+            };
+            setAlertQueue(prev => [...prev, mockSale]);
+          }}
+          className="group flex items-center gap-3 px-4 py-3 bg-slate-900/80 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl border border-white/10 hover:border-white/20 backdrop-blur-md transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1"
+          title="Testar Alerta"
+        >
+          <span className="text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 -translate-x-2 group-hover:translate-x-0">
+            Testar Alerta
+          </span>
+          <div className="p-1 rounded-lg bg-red-500/20 text-red-400 group-hover:bg-red-500 group-hover:text-white transition-all duration-300">
+            🚀
+          </div>
+        </button>
       </div>
 
       {/* Sales Alert */}

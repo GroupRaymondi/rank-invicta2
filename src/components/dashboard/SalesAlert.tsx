@@ -170,34 +170,35 @@ export const SalesAlert: React.FC<SalesAlertProps> = ({ isVisible = false, saleI
                 voiceAudio.volume = 1.0;
 
                 // Play voice immediately
-                voiceAudio.play().catch(e => console.error("Voice play failed", e));
+                const playPromise = voiceAudio.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(e => console.error("Voice play failed", e));
+                }
 
-                // When voice metadata loads, schedule the bell
-                voiceAudio.onloadedmetadata = () => {
-                    if (!voiceAudio) return;
-                    const duration = voiceAudio.duration;
-                    if (duration && duration > 1) {
-                        const bellDelay = (duration - 1) * 1000; // Start 1s before end
-                        bellTimeout = setTimeout(() => {
-                            bellAudio.currentTime = 3; // Skip first 3 seconds
-                            bellAudio.play().catch(e => console.error("Bell play failed", e));
-                        }, bellDelay);
-                    } else {
-                        // Fallback
-                        bellAudio.currentTime = 3;
-                        bellAudio.play().catch(e => console.error("Bell play failed", e));
+                // Play bell after a short delay (e.g., 1s) or immediately if preferred.
+                // User wants sound, so let's play bell immediately too or slightly delayed to layer it.
+                // Let's play bell after 0.5s to give voice a start
+                bellTimeout = setTimeout(() => {
+                    bellAudio.currentTime = 0;
+                    const bellPromise = bellAudio.play();
+                    if (bellPromise !== undefined) {
+                        bellPromise.catch(e => console.error("Bell play failed", e));
                     }
-                };
+                }, 500);
+
             } else {
                 // Only bell case (501-1999)
-                bellAudio.currentTime = 3; // Skip first 3 seconds
-                bellAudio.play().catch(e => console.error("Bell play failed", e));
+                bellAudio.currentTime = 0;
+                const bellPromise = bellAudio.play();
+                if (bellPromise !== undefined) {
+                    bellPromise.catch(e => console.error("Bell play failed", e));
+                }
             }
 
-            // Auto hide after 15 seconds (12s rocket + 3s hold)
+            // Auto hide after 8 seconds (3s rocket + 5s hold)
             const timer = setTimeout(() => {
                 if (onComplete) onComplete();
-            }, 18000);
+            }, 8000);
 
             return () => {
                 clearTimeout(timer);
@@ -240,7 +241,7 @@ export const SalesAlert: React.FC<SalesAlertProps> = ({ isVisible = false, saleI
                             animate={{ y: "-150vh" }}
                             exit={{ opacity: 0 }}
                             transition={{
-                                y: { duration: 15, ease: "easeInOut" },
+                                y: { duration: 8, ease: "easeIn" }, // Slow down to 8s
                                 default: { duration: 0.5 }
                             }}
                             className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center z-50"
