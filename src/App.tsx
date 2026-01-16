@@ -6,10 +6,9 @@ import { RankingList } from './components/dashboard/RankingList';
 import { TeamGrid, type Team } from './components/dashboard/TeamGrid';
 import { SalesAlert } from './components/dashboard/SalesAlert';
 import { Podium } from './components/dashboard/Podium';
-// import { AuthProvider, useAuth } from './contexts/AuthContext';
-// import { Login } from './pages/Login';
 import { supabase } from './lib/supabase';
 import { Loader2, Maximize2 } from 'lucide-react';
+import { getAudioPathByEntryValue } from './lib/saleAudioRules';
 
 // Types for Supabase Data
 interface Profile {
@@ -25,39 +24,38 @@ interface MonthlySales {
   total_sales: number;
 }
 
+interface SaleAlertData {
+  isVisible: boolean;
+  id?: string;
+  sellerName?: string;
+  sellerAvatar?: string;
+  processName?: string;
+  entryValue?: number;
+}
+
 const DashboardContent = () => {
-  // const { user, loading: authLoading } = useAuth(); // Auth removed
   const [loading, setLoading] = useState(true);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [sales, setSales] = useState<MonthlySales[]>([]);
 
   // Alert State
-  const [alertData, setAlertData] = useState<{
-    isVisible: boolean;
-    id?: string; // Added sale ID
-    sellerName?: string;
-    sellerAvatar?: string;
-    processName?: string;
-    entryValue?: number;
-  }>({ isVisible: false });
-
-
+  const [alertData, setAlertData] = useState<SaleAlertData>({ isVisible: false });
 
   // Queue System
   const [alertQueue, setAlertQueue] = useState<Array<{
     id: string;
     responsible_id: string;
-    created_by?: string; // Added created_by
-    seller_id?: string;  // Added seller_id
+    created_by?: string;
+    seller_id?: string;
     process_type_name: string;
     paid_amount: string | number;
+    seller_name?: string;
+    seller_avatar_url?: string;
   }>>([]);
   const processedSaleIds = useRef<Set<string>>(new Set());
   const isProcessingAlert = useRef(false);
 
   useEffect(() => {
-    // Removed user check to allow public access
-
     const fetchData = async () => {
       try {
         // Fetch Roles (Only VENDEDOR)
@@ -104,7 +102,6 @@ const DashboardContent = () => {
       .channel('sales_updates')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'seller_monthly_sales' }, (payload) => {
         console.log('Monthly Sales Update:', payload);
-        // Refresh data only, do NOT trigger alert here anymore
         fetchData();
       })
       .subscribe();
@@ -118,7 +115,7 @@ const DashboardContent = () => {
           id: string;
           seller_id: string;
           seller_name: string;
-          seller_avatar_url?: string; // Added avatar url
+          seller_avatar_url?: string;
           sale_value: string | number;
           entry_value: string | number;
           process_type: string;
@@ -134,6 +131,17 @@ const DashboardContent = () => {
         // Add to processed set
         processedSaleIds.current.add(newEvent.id);
 
+        // Play Audio Immediately based on Entry Value
+        const entryVal = typeof newEvent.entry_value === 'string' ? parseFloat(newEvent.entry_value) : newEvent.entry_value;
+        const audioPath = getAudioPathByEntryValue(entryVal);
+
+        if (audioPath) {
+          console.log('Playing Audio for Value:', entryVal, 'Path:', audioPath);
+          const audio = new Audio(audioPath);
+          audio.volume = 0.7;
+          audio.play().catch(err => console.warn('Audio play failed:', err));
+        }
+
         // Add to Queue
         setAlertQueue(prev => [...prev, {
           id: newEvent.sales_process_id,
@@ -141,7 +149,7 @@ const DashboardContent = () => {
           process_type_name: newEvent.process_type,
           paid_amount: newEvent.entry_value,
           seller_name: newEvent.seller_name,
-          seller_avatar_url: newEvent.seller_avatar_url // Pass avatar directly
+          seller_avatar_url: newEvent.seller_avatar_url
         }]);
 
         // Also refresh data to ensure ranking is up to date
@@ -153,7 +161,7 @@ const DashboardContent = () => {
       salesSubscription.unsubscribe();
       newSaleSubscription.unsubscribe();
     };
-  }, [profiles]); // Added profiles dependency to ensure lookup works
+  }, []); // Removed profiles dependency as it's not needed for the subscription setup itself
 
   // Process Queue
   useEffect(() => {
@@ -195,15 +203,12 @@ const DashboardContent = () => {
         // Trigger Alert
         setAlertData({
           isVisible: true,
-          id: nextSale.id, // Pass sale ID
+          id: nextSale.id,
           sellerName,
           sellerAvatar,
           processName: nextSale.process_type_name,
           entryValue
         });
-
-        // NOTE: We do NOT remove from queue here anymore. 
-        // We wait for handleAlertComplete to ensure the alert finishes.
 
       } catch (error) {
         console.error('Error processing alert queue:', error);
@@ -262,15 +267,9 @@ const DashboardContent = () => {
     sellers.forEach(seller => {
       if (!seller.team) return;
 
-      // Normalize team name (handle Titãs vs Titans if needed, or just case insensitivity)
-      // For now, let's assume exact match or simple mapping if needed.
-      // If the seller has "Titãs" and we have "Titans" in KNOWN_TEAMS, we need to map it.
-      // Or just add "Titãs" to KNOWN_TEAMS if we want both? No, user wants to fix duplication.
-      // Let's map "Titãs" to "Titans" if found.
       let teamName = seller.team;
       if (teamName === 'Titãs') teamName = 'Titans';
 
-      // If team is not in known list, add it (or ignore depending on requirement, but better to add)
       if (!teamsMap[teamName]) {
         teamsMap[teamName] = {
           id: teamName,
@@ -293,7 +292,7 @@ const DashboardContent = () => {
       ...team,
       rank: index + 1,
       topMembers: team.topMembers
-        .filter(m => m.processes > 0) // Only show members with sales
+        .filter(m => m.processes > 0)
         .sort((a, b) => b.processes - a.processes)
         .slice(0, 3)
     }));
@@ -323,11 +322,6 @@ const DashboardContent = () => {
 
   return (
     <DashboardLayout className="p-4 gap-4">
-      {/* Fullscreen Toggle */}
-
-
-      {/* Header Removed */}
-
       <div className="flex-1 grid grid-cols-12 gap-4 min-h-0">
         {/* Left Column: Ranking List */}
         <div className="col-span-3 h-full animate-slide-up" style={{ animationDelay: '0.1s' }}>
@@ -335,13 +329,10 @@ const DashboardContent = () => {
         </div>
 
         {/* Center Column: Logo, Podium, KPI */}
-        {/* Center Column: Logo, Podium, KPI */}
         <div className="col-span-6 h-full flex flex-col relative py-4" style={{ animationDelay: '0.2s' }}>
 
           {/* 1. Logo & Name (Top) */}
           <div className="flex-none flex flex-col items-center justify-start relative z-20 pt-10">
-            {/* Test Button (Only for testing) */}
-
             <div className="w-28 h-28 relative mb-4">
               <img src="/logo-new.png" alt="Invicta Consulting" className="w-full h-full object-contain relative z-10" />
             </div>
@@ -365,11 +356,10 @@ const DashboardContent = () => {
 
           {/* 3. Podium (Bottom) */}
           <div className="flex-none flex items-end justify-center relative z-10 pb-6">
-            {/* Pass top 3 sellers to Podium */}
             <Podium winners={processedData.sellers.slice(0, 3).map((s, i) => ({
               id: s.id,
               name: s.name,
-              amount: s.deals, // Using deals as amount for now
+              amount: s.deals,
               position: (i + 1) as 1 | 2 | 3,
               avatar: s.avatar
             }))} />
@@ -399,6 +389,33 @@ const DashboardContent = () => {
           </div>
         </button>
 
+        {/* Test Audio Button */}
+        <button
+          onClick={() => {
+            const testValues = [500, 1000, 2500, 5000, 10000, 20000, 50000];
+            const testValue = testValues[Math.floor(Math.random() * testValues.length)];
+
+            // Test Audio Logic
+            const audioPath = getAudioPathByEntryValue(testValue);
+            if (audioPath) {
+              console.log('Testing Audio:', audioPath);
+              new Audio(audioPath).play().catch(e => console.error('Error playing audio:', e));
+            } else {
+              console.log(`No specific audio for value: ${testValue}. Playing default.`);
+              new Audio('/sounds/Sino.mp3').play().catch(e => console.error('Error playing default audio:', e));
+            }
+          }}
+          className="group flex items-center gap-3 px-4 py-3 bg-slate-900/80 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl border border-white/10 hover:border-white/20 backdrop-blur-md transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1"
+          title="Testar Áudio"
+        >
+          <span className="text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 -translate-x-2 group-hover:translate-x-0">
+            Testar Áudio
+          </span>
+          <div className="p-1 rounded-lg bg-blue-500/20 text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition-all duration-300">
+            🔊
+          </div>
+        </button>
+
         {/* Test Alert Button */}
         <button
           onClick={() => {
@@ -408,6 +425,12 @@ const DashboardContent = () => {
 
             const testValues = [500, 1000, 2500, 5000];
             const testValue = testValues[Math.floor(Math.random() * testValues.length)];
+
+            // Play audio for test alert too
+            const audioPath = getAudioPathByEntryValue(testValue);
+            if (audioPath) {
+              new Audio(audioPath).play().catch(e => console.error(e));
+            }
 
             const mockSale = {
               id: `test-${Date.now()}`,
@@ -433,7 +456,7 @@ const DashboardContent = () => {
       {/* Sales Alert */}
       <SalesAlert
         isVisible={alertData.isVisible}
-        saleId={alertData.id} // Pass sale ID
+        saleId={alertData.id}
         sellerName={alertData.sellerName}
         sellerAvatar={alertData.sellerAvatar}
         processName={alertData.processName}
