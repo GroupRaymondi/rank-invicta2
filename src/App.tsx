@@ -111,13 +111,14 @@ const DashboardContent = () => {
 
     // Realtime Subscription for New Sales Alerts (Sales Events)
     const newSaleSubscription = supabase
-      .channel('new_sale_alerts')
+      .channel('sales-events')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'sales_events' }, (payload) => {
         console.log('New Sale Event Detected:', payload);
         const newEvent = payload.new as {
           id: string;
           seller_id: string;
           seller_name: string;
+          seller_avatar_url?: string; // Added avatar url
           sale_value: string | number;
           entry_value: string | number;
           process_type: string;
@@ -135,12 +136,12 @@ const DashboardContent = () => {
 
         // Add to Queue
         setAlertQueue(prev => [...prev, {
-          id: newEvent.sales_process_id, // Use process ID for consistency if needed, or event ID
+          id: newEvent.sales_process_id,
           responsible_id: newEvent.seller_id,
           process_type_name: newEvent.process_type,
           paid_amount: newEvent.entry_value,
-          // Extra fields from event
-          seller_name: newEvent.seller_name
+          seller_name: newEvent.seller_name,
+          seller_avatar_url: newEvent.seller_avatar_url // Pass avatar directly
         }]);
 
         // Also refresh data to ensure ranking is up to date
@@ -163,30 +164,28 @@ const DashboardContent = () => {
       const nextSale = alertQueue[0];
 
       try {
-        // Find seller avatar from profiles (Local Lookup)
-        // We already have the name from the event, but we need the avatar
-        let sellerProfile = profiles.find(p => p.id === nextSale.responsible_id);
+        // Use data directly from the event if available
+        const sellerName = (nextSale as any).seller_name || 'Vendedor';
 
-        // On-Demand Fetch if not found locally
-        if (!sellerProfile) {
-          console.log('Seller not found locally, fetching from DB:', nextSale.responsible_id);
-          const { data } = await supabase
-            .from('profiles')
-            .select('id, full_name, avatar_url, team')
-            .eq('id', nextSale.responsible_id)
-            .single();
+        // Use avatar from event, fallback to profile lookup only if missing
+        let sellerAvatar = (nextSale as any).seller_avatar_url;
 
-          if (data) {
-            sellerProfile = data;
-            // Optionally update local state to avoid re-fetching
-            setProfiles(prev => [...prev, data]);
+        if (!sellerAvatar) {
+          // Fallback: Find seller avatar from profiles (Local Lookup)
+          let sellerProfile = profiles.find(p => p.id === nextSale.responsible_id);
+
+          if (!sellerProfile) {
+            // On-Demand Fetch
+            const { data } = await supabase
+              .from('profiles')
+              .select('avatar_url')
+              .eq('id', nextSale.responsible_id)
+              .single();
+            if (data) sellerAvatar = data.avatar_url;
+          } else {
+            sellerAvatar = sellerProfile.avatar_url;
           }
         }
-
-        const sellerAvatar = sellerProfile ? sellerProfile.avatar_url : undefined;
-        // Use name from event if available, otherwise fallback to profile
-        // The event has the snapshot of the name at time of sale, which is good
-        const sellerName = (nextSale as any).seller_name || (sellerProfile?.full_name || 'Vendedor');
 
         // Parse amount (ensure it's a number)
         const entryValue = typeof nextSale.paid_amount === 'string'
