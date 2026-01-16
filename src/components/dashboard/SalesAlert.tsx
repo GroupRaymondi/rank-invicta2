@@ -139,11 +139,9 @@ export const SalesAlert: React.FC<SalesAlertProps> = ({ isVisible = false, saleI
             console.log('SalesAlert Visible', { saleId, sellerName, entryValue });
 
             // Audio Orchestration
+            const value = entryValue || 0;
             let voiceFile = '';
             let playVoice = false;
-
-            // Determine audio strategy based on value
-            const value = entryValue || 0;
 
             if (value <= 500) {
                 voiceFile = '/ElevenLabs_Vagner.mp3';
@@ -165,35 +163,30 @@ export const SalesAlert: React.FC<SalesAlertProps> = ({ isVisible = false, saleI
             let voiceAudio: HTMLAudioElement | null = null;
             let bellTimeout: NodeJS.Timeout;
 
-            if (playVoice) {
-                voiceAudio = new Audio(voiceFile);
-                voiceAudio.volume = 1.0;
+            const play = async () => {
+                try {
+                    if (playVoice) {
+                        voiceAudio = new Audio(voiceFile);
+                        voiceAudio.volume = 1.0;
+                        console.log('Playing Voice:', voiceFile);
+                        await voiceAudio.play();
 
-                // Play voice immediately
-                const playPromise = voiceAudio.play();
-                if (playPromise !== undefined) {
-                    playPromise.catch(e => console.error("Voice play failed", e));
-                }
-
-                // Play bell after a short delay (e.g., 1s) or immediately if preferred.
-                // User wants sound, so let's play bell immediately too or slightly delayed to layer it.
-                // Let's play bell after 0.5s to give voice a start
-                bellTimeout = setTimeout(() => {
-                    bellAudio.currentTime = 0;
-                    const bellPromise = bellAudio.play();
-                    if (bellPromise !== undefined) {
-                        bellPromise.catch(e => console.error("Bell play failed", e));
+                        bellTimeout = setTimeout(async () => {
+                            console.log('Playing Bell (Delayed)');
+                            bellAudio.currentTime = 0;
+                            await bellAudio.play();
+                        }, 1000);
+                    } else {
+                        console.log('Playing Bell (Immediate)');
+                        bellAudio.currentTime = 0;
+                        await bellAudio.play();
                     }
-                }, 500);
-
-            } else {
-                // Only bell case (501-1999)
-                bellAudio.currentTime = 0;
-                const bellPromise = bellAudio.play();
-                if (bellPromise !== undefined) {
-                    bellPromise.catch(e => console.error("Bell play failed", e));
+                } catch (e) {
+                    console.error("Audio playback failed:", e);
                 }
-            }
+            };
+
+            play();
 
             // Auto hide after 8 seconds (3s rocket + 5s hold)
             const timer = setTimeout(() => {
@@ -203,8 +196,6 @@ export const SalesAlert: React.FC<SalesAlertProps> = ({ isVisible = false, saleI
             return () => {
                 clearTimeout(timer);
                 if (bellTimeout) clearTimeout(bellTimeout);
-
-                // Cleanup audios
                 if (voiceAudio) {
                     voiceAudio.pause();
                     voiceAudio.currentTime = 0;
