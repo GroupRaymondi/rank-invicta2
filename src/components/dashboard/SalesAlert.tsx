@@ -163,14 +163,14 @@ export const SalesAlert: React.FC<SalesAlertProps> = ({ isVisible = false, saleI
                     <div className="relative flex flex-col items-center w-full h-full justify-center">
 
                         {/* Fireworks Effect - Keyed to restart on new sale */}
-                        <Fireworks key={saleId ? `fireworks-${saleId}` : `fireworks-${Date.now()}`} />
+                        <Fireworks key={saleId ? `fireworks-${saleId}` : `fireworks-default`} />
 
                         {/* Side Confetti - Celebration! */}
-                        <SideConfetti key={saleId ? `confetti-${saleId}` : `confetti-${Date.now()}`} />
+                        <SideConfetti key={saleId ? `confetti-${saleId}` : `confetti-default`} />
 
                         {/* Rocket Container - Animating Upwards with Framer Motion */}
                         <motion.div
-                            key={saleId ? `rocket-${saleId}` : `rocket-${Date.now()}`}
+                            key={saleId ? `rocket-${saleId}` : `rocket-default`}
                             initial={{ y: "100vh" }}
                             animate={{ y: "-150vh" }}
                             exit={{ opacity: 0 }}
@@ -193,7 +193,7 @@ export const SalesAlert: React.FC<SalesAlertProps> = ({ isVisible = false, saleI
 
                         {/* Content Card - Fades in */}
                         <motion.div
-                            key={saleId ? `content-${saleId}` : `content-${Date.now()}`} // Force re-render for content too
+                            key={saleId ? `content-${saleId}` : `content-default`} // Force re-render for content too
                             initial={{ opacity: 0, y: "100vh" }} // Start from bottom of screen
                             animate={{ opacity: 1, y: 0 }} // Slide up to center
                             exit={{ opacity: 0, y: -50 }} // Slide up slightly when leaving
