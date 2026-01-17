@@ -52,7 +52,8 @@ const DashboardContent = () => {
     seller_name?: string;
     seller_avatar_url?: string;
   }>>([]);
-  const processedSaleIds = useRef<Set<string>>(new Set());
+  const processedSaleIds = useRef(new Set<string>());
+  const processedSalesProcessIds = useRef(new Set<string>());
   const isProcessingAlert = useRef(false);
 
   useEffect(() => {
@@ -122,14 +123,20 @@ const DashboardContent = () => {
           sales_process_id: string;
         };
 
-        // De-duplication check (using event ID)
+        // De-duplication check (using event ID AND sales_process_id)
         if (processedSaleIds.current.has(newEvent.id)) {
-          console.log('Duplicate event ignored:', newEvent.id);
+          console.log('Duplicate event ID ignored:', newEvent.id);
           return;
         }
 
-        // Add to processed set
+        if (processedSalesProcessIds.current.has(newEvent.sales_process_id)) {
+          console.log('Duplicate sales_process_id ignored:', newEvent.sales_process_id);
+          return;
+        }
+
+        // Add to processed sets
         processedSaleIds.current.add(newEvent.id);
+        processedSalesProcessIds.current.add(newEvent.sales_process_id);
 
         // Play Audio Sequence based on Entry Value
         const entryVal = typeof newEvent.entry_value === 'string' ? parseFloat(newEvent.entry_value) : newEvent.entry_value;
