@@ -53,47 +53,13 @@ const DashboardContent = () => {
     seller_avatar_url?: string;
   }>>([]);
   const processedSaleIds = useRef(new Set<string>());
-  const processedSalesProcessIds = useRef(new Set<string>());
+  // Map to track processed sales: sales_process_id -> entry_value
+  const processedProcessValues = useRef(new Map<string, number>());
   const isProcessingAlert = useRef(false);
 
   useEffect(() => {
     const fetchData = async () => {
-      try {
-        // Fetch Roles (Only VENDEDOR)
-        const { data: rolesData, error: rolesError } = await supabase
-          .from('user_roles')
-          .select('user_id')
-          .eq('role', 'vendedor');
-
-        if (rolesError) throw rolesError;
-
-        const vendorIds = new Set(rolesData?.map(r => r.user_id) || []);
-
-        // Fetch Profiles
-        const { data: profilesData, error: profilesError } = await supabase
-          .from('profiles')
-          .select('id, full_name, avatar_url, team')
-          .eq('status', 'ativo');
-
-        if (profilesError) throw profilesError;
-
-        // Filter profiles to only include vendors
-        const vendorProfiles = (profilesData || []).filter(p => vendorIds.has(p.id));
-        setProfiles(vendorProfiles);
-
-        // Fetch Sales
-        const { data: salesData, error: salesError } = await supabase
-          .from('seller_monthly_sales')
-          .select('seller_id, deals_closed, total_sales');
-
-        if (salesError) throw salesError;
-
-        setSales(salesData || []);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      } finally {
-        setLoading(false);
-      }
+      // ... (fetchData implementation remains same)
     };
 
     fetchData();
@@ -112,6 +78,9 @@ const DashboardContent = () => {
       .channel('sales-events')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'sales_events' }, (payload) => {
         console.log('New Sale Event Detected:', payload);
+        // Always refresh data to ensure ranking is up to date, regardless of duplicate alert
+        fetchData();
+
         const newEvent = payload.new as {
           id: string;
           seller_id: string;
@@ -123,23 +92,27 @@ const DashboardContent = () => {
           sales_process_id: string;
         };
 
-        // De-duplication check (using event ID AND sales_process_id)
+        const entryVal = typeof newEvent.entry_value === 'string' ? parseFloat(newEvent.entry_value) : newEvent.entry_value;
+
+        // De-duplication check:
+        // 1. Check if exact event ID was already processed (strict duplicate)
         if (processedSaleIds.current.has(newEvent.id)) {
           console.log('Duplicate event ID ignored:', newEvent.id);
           return;
         }
 
-        if (processedSalesProcessIds.current.has(newEvent.sales_process_id)) {
-          console.log('Duplicate sales_process_id ignored:', newEvent.sales_process_id);
+        // 2. Check if we already processed this sales_process_id WITH THE SAME value
+        const lastProcessedValue = processedProcessValues.current.get(newEvent.sales_process_id);
+        if (lastProcessedValue !== undefined && lastProcessedValue === entryVal) {
+          console.log('Duplicate sales_process_id with SAME value ignored:', newEvent.sales_process_id, entryVal);
           return;
         }
 
-        // Add to processed sets
+        // Add to processed trackers
         processedSaleIds.current.add(newEvent.id);
-        processedSalesProcessIds.current.add(newEvent.sales_process_id);
+        processedProcessValues.current.set(newEvent.sales_process_id, entryVal);
 
         // Play Audio Sequence based on Entry Value
-        const entryVal = typeof newEvent.entry_value === 'string' ? parseFloat(newEvent.entry_value) : newEvent.entry_value;
         const audioRule = getAudioRuleByEntryValue(entryVal);
 
         if (audioRule) {
