@@ -5,50 +5,49 @@ export type AudioKey =
     | 'ElevenLabs_Vagner_5k'
     | null;
 
-interface AudioRule {
+export interface AudioRule {
     minInclusive: number;
     maxInclusive: number;
-    audioKey: AudioKey;
-    audioPath: string;
+    voicePath: string | null;
+    playBell: boolean;
+    bellDelay: number; // in milliseconds
 }
 
 const AUDIO_RULES: AudioRule[] = [
     {
         minInclusive: 0,
         maxInclusive: 999,
-        audioKey: 'ElevenLabs_Vagner',
-        audioPath: '/sounds/ElevenLabs_Vagner.mp3'
+        voicePath: '/sounds/ElevenLabs_Vagner.mp3',
+        playBell: true,
+        bellDelay: 3000
     },
     {
         minInclusive: 1000,
         maxInclusive: 1999,
-        audioKey: 'Sino',
-        audioPath: '/sounds/Sino.mp3'
+        voicePath: null, // No voice
+        playBell: true,
+        bellDelay: 0 // Immediate
     },
     {
         minInclusive: 2000,
-        maxInclusive: 2499,
-        audioKey: 'ElevenLabs_Vagner_2k',
-        audioPath: '/sounds/ElevenLabs_Vagner_2k.mp3'
+        maxInclusive: 2999,
+        voicePath: '/sounds/ElevenLabs_Vagner_2k.mp3',
+        playBell: true,
+        bellDelay: 3000
     },
     {
-        minInclusive: 2500,
-        maxInclusive: 1000000, // Increased max to cover high values
-        audioKey: 'ElevenLabs_Vagner_5k',
-        audioPath: '/sounds/ElevenLabs_Vagner_5k.mp3'
+        minInclusive: 3000,
+        maxInclusive: 1000000,
+        voicePath: '/sounds/ElevenLabs_Vagner_5k.mp3',
+        playBell: true,
+        bellDelay: 3000
     }
 ];
 
-export function getAudioPathByEntryValue(entryValue: number): string | null {
+export function getAudioRuleByEntryValue(entryValue: number): AudioRule | null {
     const rule = AUDIO_RULES.find(
         r => entryValue >= r.minInclusive && entryValue <= r.maxInclusive
     );
-    return rule?.audioPath ?? null;
+    return rule ?? null;
 }
 
-export function getAudioKeyByEntryValue(entryValue: number): AudioKey {
-    const rule = AUDIO_RULES.find(
-        r => entryValue >= r.minInclusive && entryValue <= r.maxInclusive
-    );
-    return rule?.audioKey ?? null;
-}

@@ -8,7 +8,7 @@ import { SalesAlert } from './components/dashboard/SalesAlert';
 import { Podium } from './components/dashboard/Podium';
 import { supabase } from './lib/supabase';
 import { Loader2, Maximize2 } from 'lucide-react';
-import { getAudioPathByEntryValue } from './lib/saleAudioRules';
+import { getAudioRuleByEntryValue } from './lib/saleAudioRules';
 
 // Types for Supabase Data
 interface Profile {
@@ -131,15 +131,28 @@ const DashboardContent = () => {
         // Add to processed set
         processedSaleIds.current.add(newEvent.id);
 
-        // Play Audio Immediately based on Entry Value
+        // Play Audio Sequence based on Entry Value
         const entryVal = typeof newEvent.entry_value === 'string' ? parseFloat(newEvent.entry_value) : newEvent.entry_value;
-        const audioPath = getAudioPathByEntryValue(entryVal);
+        const audioRule = getAudioRuleByEntryValue(entryVal);
 
-        if (audioPath) {
-          console.log('Playing Audio for Value:', entryVal, 'Path:', audioPath);
-          const audio = new Audio(audioPath);
-          audio.volume = 0.7;
-          audio.play().catch(err => console.warn('Audio play failed:', err));
+        if (audioRule) {
+          console.log('Playing Audio Sequence for Value:', entryVal, 'rule:', audioRule);
+
+          // 1. Play Voice (if exists)
+          if (audioRule.voicePath) {
+            const voiceAudio = new Audio(audioRule.voicePath);
+            voiceAudio.volume = 0.7;
+            voiceAudio.play().catch(err => console.warn('Voice play failed:', err));
+          }
+
+          // 2. Play Bell (if enabled)
+          if (audioRule.playBell) {
+            setTimeout(() => {
+              const bellAudio = new Audio('/sounds/Sino.mp3');
+              bellAudio.volume = 0.6;
+              bellAudio.play().catch(err => console.warn('Bell play failed:', err));
+            }, audioRule.bellDelay);
+          }
         }
 
         // Add to Queue
@@ -332,8 +345,8 @@ const DashboardContent = () => {
         <div className="col-span-6 h-full flex flex-col relative py-4" style={{ animationDelay: '0.2s' }}>
 
           {/* 1. Logo & Name (Top) */}
-          <div className="flex-none flex flex-col items-center justify-start relative z-20 pt-10">
-            <div className="w-28 h-28 relative mb-4">
+          <div className="flex-none flex flex-col items-center justify-start relative z-20 pt-6">
+            <div className="w-48 h-48 relative mb-2">
               <img src="/logo-new.png" alt="Invicta Consulting" className="w-full h-full object-contain relative z-10" />
             </div>
             <h1 className="text-3xl font-black tracking-tight text-white uppercase tracking-widest text-glow-accent text-center drop-shadow-lg">
@@ -392,16 +405,25 @@ const DashboardContent = () => {
         {/* Test Audio Button */}
         <button
           onClick={() => {
-            const testValues = [500, 1000, 2500, 5000, 10000, 20000, 50000];
+            const testValues = [500, 1500, 2500, 5000];
             const testValue = testValues[Math.floor(Math.random() * testValues.length)];
 
             // Test Audio Logic
-            const audioPath = getAudioPathByEntryValue(testValue);
-            if (audioPath) {
-              console.log('Testing Audio:', audioPath);
-              new Audio(audioPath).play().catch(e => console.error('Error playing audio:', e));
+            const audioRule = getAudioRuleByEntryValue(testValue);
+            if (audioRule) {
+              console.log('Testing Audio Sequence for:', testValue, audioRule);
+
+              if (audioRule.voicePath) {
+                new Audio(audioRule.voicePath).play().catch(e => console.error('Error playing voice:', e));
+              }
+
+              if (audioRule.playBell) {
+                setTimeout(() => {
+                  new Audio('/sounds/Sino.mp3').play().catch(e => console.error('Error playing bell:', e));
+                }, audioRule.bellDelay);
+              }
             } else {
-              console.log(`No specific audio for value: ${testValue}. Playing default.`);
+              console.log(`No specific rule for value: ${testValue}. Playing default.`);
               new Audio('/sounds/Sino.mp3').play().catch(e => console.error('Error playing default audio:', e));
             }
           }}
@@ -427,9 +449,16 @@ const DashboardContent = () => {
             const testValue = testValues[Math.floor(Math.random() * testValues.length)];
 
             // Play audio for test alert too
-            const audioPath = getAudioPathByEntryValue(testValue);
-            if (audioPath) {
-              new Audio(audioPath).play().catch(e => console.error(e));
+            const audioRule = getAudioRuleByEntryValue(testValue);
+            if (audioRule) {
+              if (audioRule.voicePath) {
+                new Audio(audioRule.voicePath).play().catch(e => console.error(e));
+              }
+              if (audioRule.playBell) {
+                setTimeout(() => {
+                  new Audio('/sounds/Sino.mp3').play().catch(e => console.error(e));
+                }, audioRule.bellDelay);
+              }
             }
 
             const mockSale = {
