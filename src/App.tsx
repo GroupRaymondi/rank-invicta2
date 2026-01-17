@@ -59,7 +59,42 @@ const DashboardContent = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      // ... (fetchData implementation remains same)
+      try {
+        // Fetch Roles (Only VENDEDOR)
+        const { data: rolesData, error: rolesError } = await supabase
+          .from('user_roles')
+          .select('user_id')
+          .eq('role', 'vendedor');
+
+        if (rolesError) throw rolesError;
+
+        const vendorIds = new Set(rolesData?.map(r => r.user_id) || []);
+
+        // Fetch Profiles
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, full_name, avatar_url, team')
+          .eq('status', 'ativo');
+
+        if (profilesError) throw profilesError;
+
+        // Filter profiles to only include vendors
+        const vendorProfiles = (profilesData || []).filter(p => vendorIds.has(p.id));
+        setProfiles(vendorProfiles);
+
+        // Fetch Sales
+        const { data: salesData, error: salesError } = await supabase
+          .from('seller_monthly_sales')
+          .select('seller_id, deals_closed, total_sales');
+
+        if (salesError) throw salesError;
+
+        setSales(salesData || []);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchData();
