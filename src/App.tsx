@@ -60,17 +60,27 @@ const DashboardContent = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch Profiles (Active and Internal)
-        // We filter by is_internal to avoid RLS issues with user_roles table
+        // Fetch Roles (Only VENDEDOR)
+        const { data: rolesData, error: rolesError } = await supabase
+          .from('user_roles')
+          .select('user_id')
+          .eq('role', 'vendedor');
+
+        if (rolesError) throw rolesError;
+
+        const vendorIds = new Set(rolesData?.map(r => r.user_id) || []);
+
+        // Fetch Profiles (Active)
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
-          .select('id, full_name, avatar_url, team, is_internal')
-          .eq('status', 'ativo')
-          .eq('is_internal', true);
+          .select('id, full_name, avatar_url, team')
+          .eq('status', 'ativo');
 
         if (profilesError) throw profilesError;
 
-        setProfiles(profilesData || []);
+        // Filter profiles to only include vendors
+        const vendorProfiles = (profilesData || []).filter(p => vendorIds.has(p.id));
+        setProfiles(vendorProfiles);
 
         // Fetch Sales
         const { data: salesData, error: salesError } = await supabase
