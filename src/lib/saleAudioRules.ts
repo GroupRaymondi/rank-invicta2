@@ -24,19 +24,19 @@ const AUDIO_RULES: AudioRule[] = [
     {
         minInclusive: 1000,
         maxInclusive: 1999,
-        voicePath: null, // No voice
+        voicePath: null, // Toca apenas o Sino (configurado via playBell)
         playBell: true,
-        bellDelay: 0 // Immediate
+        bellDelay: 0 // Imediato
     },
     {
         minInclusive: 2000,
-        maxInclusive: 2999,
+        maxInclusive: 4999,
         voicePath: '/sounds/ElevenLabs_Vagner_2k.mp3',
         playBell: true,
         bellDelay: 3000
     },
     {
-        minInclusive: 3000,
+        minInclusive: 5000,
         maxInclusive: Number.MAX_SAFE_INTEGER,
         voicePath: '/sounds/ElevenLabs_Vagner_5k.mp3',
         playBell: true,
