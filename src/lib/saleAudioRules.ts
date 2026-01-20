@@ -37,7 +37,7 @@ const AUDIO_RULES: AudioRule[] = [
     },
     {
         minInclusive: 3000,
-        maxInclusive: 1000000,
+        maxInclusive: Number.MAX_SAFE_INTEGER,
         voicePath: '/sounds/ElevenLabs_Vagner_5k.mp3',
         playBell: true,
         bellDelay: 3000

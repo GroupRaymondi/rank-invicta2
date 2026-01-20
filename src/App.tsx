@@ -127,7 +127,38 @@ const DashboardContent = () => {
           sales_process_id: string;
         };
 
-        const entryVal = typeof newEvent.entry_value === 'string' ? parseFloat(newEvent.entry_value) : newEvent.entry_value;
+        const rawValue = newEvent.entry_value;
+        let entryVal: number = 0;
+
+        if (typeof rawValue === 'number') {
+          entryVal = rawValue;
+        } else if (typeof rawValue === 'string') {
+          // Robust parsing for "1.000,00" (PT-BR) or "1000.00" (EN-US)
+          // 1. Remove currency symbols and whitespace
+          let clean = rawValue.replace(/[^0-9.,]/g, '');
+
+          if (clean.includes(',') && clean.includes('.')) {
+            // Has both, assume last one is decimal
+            if (clean.lastIndexOf(',') > clean.lastIndexOf('.')) {
+              // 1.000,00 -> 1000.00
+              clean = clean.replace(/\./g, '').replace(',', '.');
+            } else {
+              // 1,000.00 -> 1000.00
+              clean = clean.replace(/,/g, '');
+            }
+          } else if (clean.includes(',')) {
+            // Only comma, assume decimal if it looks like decimal (2 decimal places usually)
+            // But safe bet for PT-BR is comma = decimal
+            clean = clean.replace(',', '.');
+          }
+
+          entryVal = parseFloat(clean);
+        }
+
+        if (isNaN(entryVal)) {
+          console.error('Failed to parse entry value:', rawValue);
+          return;
+        }
 
         // De-duplication check:
         // 1. Check if exact event ID was already processed (strict duplicate)
@@ -147,28 +178,8 @@ const DashboardContent = () => {
         processedSaleIds.current.add(newEvent.id);
         processedProcessValues.current.set(newEvent.sales_process_id, entryVal);
 
-        // Play Audio Sequence based on Entry Value
-        const audioRule = getAudioRuleByEntryValue(entryVal);
+        // Audio logic moved to queue processing to sync with visual alert
 
-        if (audioRule) {
-          console.log('Playing Audio Sequence for Value:', entryVal, 'rule:', audioRule);
-
-          // 1. Play Voice (if exists)
-          if (audioRule.voicePath) {
-            const voiceAudio = new Audio(audioRule.voicePath);
-            voiceAudio.volume = 0.7;
-            voiceAudio.play().catch(err => console.warn('Voice play failed:', err));
-          }
-
-          // 2. Play Bell (if enabled)
-          if (audioRule.playBell) {
-            setTimeout(() => {
-              const bellAudio = new Audio('/sounds/Sino.mp3');
-              bellAudio.volume = 0.6;
-              bellAudio.play().catch(err => console.warn('Bell play failed:', err));
-            }, audioRule.bellDelay);
-          }
-        }
 
         // Add to Queue
         setAlertQueue(prev => [...prev, {
@@ -237,6 +248,35 @@ const DashboardContent = () => {
           processName: nextSale.process_type_name,
           entryValue
         });
+
+        // Play Audio Sequence based on Entry Value (Synced with Visual Alert)
+        const audioRule = getAudioRuleByEntryValue(entryValue);
+
+        if (audioRule) {
+          console.log('Playing Audio Sequence for Value:', entryValue, 'rule:', audioRule);
+
+          // 1. Play Voice (if exists)
+          if (audioRule.voicePath) {
+            const voiceAudio = new Audio(audioRule.voicePath);
+            voiceAudio.volume = 1.0;
+            voiceAudio.play()
+              .then(() => console.log('Voice playing successfully'))
+              .catch(err => console.warn('Voice play failed (autoplay policy?):', err));
+          }
+
+          // 2. Play Bell (if enabled)
+          if (audioRule.playBell) {
+            setTimeout(() => {
+              const bellAudio = new Audio('/sounds/Sino.mp3');
+              bellAudio.volume = 1.0;
+              bellAudio.play()
+                .then(() => console.log('Bell playing successfully'))
+                .catch(err => console.warn('Bell play failed:', err));
+            }, audioRule.bellDelay);
+          }
+        } else {
+          console.warn('No audio rule found for value:', entryValue);
+        }
 
       } catch (error) {
         console.error('Error processing alert queue:', error);
