@@ -57,6 +57,52 @@ const DashboardContent = () => {
   const processedProcessValues = useRef(new Map<string, number>());
   const isProcessingAlert = useRef(false);
 
+
+  // Audio Refs
+  const voicePlayerRef = useRef<HTMLAudioElement>(null);
+  const bellPlayerRef = useRef<HTMLAudioElement>(null);
+  const [audioUnlocked, setAudioUnlocked] = useState(false);
+
+  // Unlock Audio on First Interaction
+  useEffect(() => {
+    const unlockAudio = () => {
+      if (audioUnlocked) return;
+
+      const playSilent = async (ref: React.RefObject<HTMLAudioElement | null>) => {
+        if (ref.current) {
+          try {
+            ref.current.volume = 0;
+            await ref.current.play();
+            ref.current.pause();
+            ref.current.currentTime = 0;
+            ref.current.volume = 1;
+          } catch (e) {
+            console.warn('Silent unlock failed', e);
+          }
+        }
+      };
+
+      Promise.all([playSilent(voicePlayerRef), playSilent(bellPlayerRef)]).then(() => {
+        console.log('Audio unlocked by user interaction');
+        setAudioUnlocked(true);
+        // Remove listeners
+        document.removeEventListener('click', unlockAudio);
+        document.removeEventListener('keydown', unlockAudio);
+        document.removeEventListener('touchstart', unlockAudio);
+      });
+    };
+
+    document.addEventListener('click', unlockAudio);
+    document.addEventListener('keydown', unlockAudio);
+    document.addEventListener('touchstart', unlockAudio);
+
+    return () => {
+      document.removeEventListener('click', unlockAudio);
+      document.removeEventListener('keydown', unlockAudio);
+      document.removeEventListener('touchstart', unlockAudio);
+    };
+  }, [audioUnlocked]);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -258,31 +304,37 @@ const DashboardContent = () => {
 
         if (audioRule) {
           // 1. Play Voice (if exists)
-          if (audioRule.voicePath) {
+          if (audioRule.voicePath && voicePlayerRef.current) {
             console.log('Attempting to play voice:', audioRule.voicePath);
-            const voiceAudio = new Audio(audioRule.voicePath);
-            voiceAudio.volume = 1.0;
-            voiceAudio.play()
-              .then(() => console.log('Voice playing successfully'))
-              .catch(err => {
-                console.error('Voice play failed:', err);
-                console.error('Error Name:', err.name);
-                console.error('Error Message:', err.message);
-              });
+            voicePlayerRef.current.src = audioRule.voicePath;
+            voicePlayerRef.current.volume = 1.0;
+            try {
+              await voicePlayerRef.current.play();
+              console.log('Voice playing successfully');
+            } catch (err: any) {
+              console.error('Voice play failed:', err);
+              console.error('Error Name:', err?.name);
+              console.error('Error Message:', err?.message);
+            }
           } else {
-            console.log('No voice path in rule');
+            console.log('No voice path in rule or player ref missing');
           }
 
           // 2. Play Bell (if enabled)
-          if (audioRule.playBell) {
+          if (audioRule.playBell && bellPlayerRef.current) {
             console.log('Scheduling bell in', audioRule.bellDelay, 'ms');
-            setTimeout(() => {
-              console.log('Attempting to play bell: /sounds/Sino.mp3');
-              const bellAudio = new Audio('/sounds/Sino.mp3');
-              bellAudio.volume = 1.0;
-              bellAudio.play()
-                .then(() => console.log('Bell playing successfully'))
-                .catch(err => console.error('Bell play failed:', err));
+            setTimeout(async () => {
+              if (bellPlayerRef.current) {
+                console.log('Attempting to play bell: /sounds/Sino.mp3');
+                bellPlayerRef.current.src = '/sounds/Sino.mp3';
+                bellPlayerRef.current.volume = 1.0;
+                try {
+                  await bellPlayerRef.current.play();
+                  console.log('Bell playing successfully');
+                } catch (err) {
+                  console.error('Bell play failed:', err);
+                }
+              }
             }, audioRule.bellDelay);
           }
         } else {
@@ -480,18 +532,25 @@ const DashboardContent = () => {
             if (audioRule) {
               console.log('Testing Audio Sequence for:', testValue, audioRule);
 
-              if (audioRule.voicePath) {
-                new Audio(audioRule.voicePath).play().catch(e => console.error('Error playing voice:', e));
+              if (audioRule.voicePath && voicePlayerRef.current) {
+                voicePlayerRef.current.src = audioRule.voicePath;
+                voicePlayerRef.current.play().catch(e => console.error('Error playing voice:', e));
               }
 
-              if (audioRule.playBell) {
+              if (audioRule.playBell && bellPlayerRef.current) {
                 setTimeout(() => {
-                  new Audio('/sounds/Sino.mp3').play().catch(e => console.error('Error playing bell:', e));
+                  if (bellPlayerRef.current) {
+                    bellPlayerRef.current.src = '/sounds/Sino.mp3';
+                    bellPlayerRef.current.play().catch(e => console.error('Error playing bell:', e));
+                  }
                 }, audioRule.bellDelay);
               }
             } else {
               console.log(`No specific rule for value: ${testValue}. Playing default.`);
-              new Audio('/sounds/Sino.mp3').play().catch(e => console.error('Error playing default audio:', e));
+              if (bellPlayerRef.current) {
+                bellPlayerRef.current.src = '/sounds/Sino.mp3';
+                bellPlayerRef.current.play().catch(e => console.error('Error playing default audio:', e));
+              }
             }
           }}
           className="group flex items-center gap-3 px-4 py-3 bg-slate-900/80 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl border border-white/10 hover:border-white/20 backdrop-blur-md transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1"
@@ -518,12 +577,16 @@ const DashboardContent = () => {
             // Play audio for test alert too
             const audioRule = getAudioRuleByEntryValue(testValue);
             if (audioRule) {
-              if (audioRule.voicePath) {
-                new Audio(audioRule.voicePath).play().catch(e => console.error(e));
+              if (audioRule.voicePath && voicePlayerRef.current) {
+                voicePlayerRef.current.src = audioRule.voicePath;
+                voicePlayerRef.current.play().catch(e => console.error(e));
               }
-              if (audioRule.playBell) {
+              if (audioRule.playBell && bellPlayerRef.current) {
                 setTimeout(() => {
-                  new Audio('/sounds/Sino.mp3').play().catch(e => console.error(e));
+                  if (bellPlayerRef.current) {
+                    bellPlayerRef.current.src = '/sounds/Sino.mp3';
+                    bellPlayerRef.current.play().catch(e => console.error(e));
+                  }
                 }, audioRule.bellDelay);
               }
             }
@@ -559,6 +622,10 @@ const DashboardContent = () => {
         entryValue={alertData.entryValue}
         onComplete={handleAlertComplete}
       />
+
+      {/* Hidden Audio Elements */}
+      <audio ref={voicePlayerRef} className="hidden" />
+      <audio ref={bellPlayerRef} className="hidden" />
     </DashboardLayout>
   );
 };
