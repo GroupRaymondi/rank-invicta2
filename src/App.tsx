@@ -186,7 +186,7 @@ const DashboardContent = () => {
           id: newEvent.sales_process_id,
           responsible_id: newEvent.seller_id,
           process_type_name: newEvent.process_type,
-          paid_amount: newEvent.entry_value,
+          paid_amount: entryVal,
           seller_name: newEvent.seller_name,
           seller_avatar_url: newEvent.seller_avatar_url
         }]);
