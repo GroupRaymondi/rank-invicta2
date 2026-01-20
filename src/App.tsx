@@ -250,33 +250,45 @@ const DashboardContent = () => {
         });
 
         // Play Audio Sequence based on Entry Value (Synced with Visual Alert)
+        console.log('--- AUDIO DEBUG START ---');
+        console.log('Processing Entry Value:', entryValue, 'Type:', typeof entryValue);
+
         const audioRule = getAudioRuleByEntryValue(entryValue);
+        console.log('Selected Audio Rule:', audioRule);
 
         if (audioRule) {
-          console.log('Playing Audio Sequence for Value:', entryValue, 'rule:', audioRule);
-
           // 1. Play Voice (if exists)
           if (audioRule.voicePath) {
+            console.log('Attempting to play voice:', audioRule.voicePath);
             const voiceAudio = new Audio(audioRule.voicePath);
             voiceAudio.volume = 1.0;
             voiceAudio.play()
               .then(() => console.log('Voice playing successfully'))
-              .catch(err => console.warn('Voice play failed (autoplay policy?):', err));
+              .catch(err => {
+                console.error('Voice play failed:', err);
+                console.error('Error Name:', err.name);
+                console.error('Error Message:', err.message);
+              });
+          } else {
+            console.log('No voice path in rule');
           }
 
           // 2. Play Bell (if enabled)
           if (audioRule.playBell) {
+            console.log('Scheduling bell in', audioRule.bellDelay, 'ms');
             setTimeout(() => {
+              console.log('Attempting to play bell: /sounds/Sino.mp3');
               const bellAudio = new Audio('/sounds/Sino.mp3');
               bellAudio.volume = 1.0;
               bellAudio.play()
                 .then(() => console.log('Bell playing successfully'))
-                .catch(err => console.warn('Bell play failed:', err));
+                .catch(err => console.error('Bell play failed:', err));
             }, audioRule.bellDelay);
           }
         } else {
           console.warn('No audio rule found for value:', entryValue);
         }
+        console.log('--- AUDIO DEBUG END ---');
 
       } catch (error) {
         console.error('Error processing alert queue:', error);
