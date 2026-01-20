@@ -17,7 +17,7 @@ const AUDIO_RULES: AudioRule[] = [
     {
         minInclusive: 0,
         maxInclusive: 999,
-        voicePath: '/sounds/ElevenLabs_Vagner.mp3',
+        voicePath: '/ElevenLabs_Vagner.mp3',
         playBell: true,
         bellDelay: 3000
     },
@@ -31,14 +31,14 @@ const AUDIO_RULES: AudioRule[] = [
     {
         minInclusive: 2000,
         maxInclusive: 4999,
-        voicePath: '/sounds/ElevenLabs_Vagner_2k.mp3',
+        voicePath: '/ElevenLabs_Vagner_2k.mp3',
         playBell: true,
         bellDelay: 3000
     },
     {
         minInclusive: 5000,
         maxInclusive: Number.MAX_SAFE_INTEGER,
-        voicePath: '/sounds/ElevenLabs_Vagner_5k.mp3',
+        voicePath: '/ElevenLabs_Vagner_5k.mp3',
         playBell: true,
         bellDelay: 3000
     }

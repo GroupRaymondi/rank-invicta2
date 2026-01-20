@@ -309,6 +309,7 @@ const DashboardContent = () => {
             voicePlayerRef.current.src = audioRule.voicePath;
             voicePlayerRef.current.volume = 1.0;
             try {
+              voicePlayerRef.current.load();
               await voicePlayerRef.current.play();
               console.log('Voice playing successfully');
             } catch (err: any) {
@@ -378,7 +379,7 @@ const DashboardContent = () => {
     })).sort((a, b) => b.deals - a.deals);
 
     // Fixed Teams List
-    const KNOWN_TEAMS = ['Titans', 'Phoenix', 'Premium', 'Canadá', 'Legacy Global', 'Seguro Champions'];
+    const KNOWN_TEAMS = ['Titans', 'Phoenix', 'Premium', 'Diamond', 'Legacy Global', 'Seguro Champions'];
 
     // Create Teams Data
     const teamsMap: Record<string, Team> = {};
@@ -401,6 +402,7 @@ const DashboardContent = () => {
 
       let teamName = seller.team;
       if (teamName === 'Titãs') teamName = 'Titans';
+      if (teamName === 'Canadá' || teamName === 'Canada') teamName = 'Diamond';
 
       if (!teamsMap[teamName]) {
         teamsMap[teamName] = {
@@ -534,6 +536,7 @@ const DashboardContent = () => {
 
               if (audioRule.voicePath && voicePlayerRef.current) {
                 voicePlayerRef.current.src = audioRule.voicePath;
+                voicePlayerRef.current.load();
                 voicePlayerRef.current.play().catch(e => console.error('Error playing voice:', e));
               }
 
@@ -579,6 +582,7 @@ const DashboardContent = () => {
             if (audioRule) {
               if (audioRule.voicePath && voicePlayerRef.current) {
                 voicePlayerRef.current.src = audioRule.voicePath;
+                voicePlayerRef.current.load();
                 voicePlayerRef.current.play().catch(e => console.error(e));
               }
               if (audioRule.playBell && bellPlayerRef.current) {
