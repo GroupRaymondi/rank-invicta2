@@ -1,5 +1,6 @@
 import { useMemo, useEffect, useState, useRef, useCallback } from 'react';
 import { DashboardLayout } from './components/layout/DashboardLayout';
+import { formatName } from './lib/utils';
 
 import { KPICards } from './components/dashboard/KPICards';
 import { RankingList } from './components/dashboard/RankingList';
@@ -233,7 +234,7 @@ const DashboardContent = () => {
           responsible_id: newEvent.seller_id,
           process_type_name: newEvent.process_type,
           paid_amount: entryVal,
-          seller_name: newEvent.seller_name,
+          seller_name: formatName(newEvent.seller_name),
           seller_avatar_url: newEvent.seller_avatar_url
         }]);
 
@@ -258,7 +259,7 @@ const DashboardContent = () => {
 
       try {
         // Use data directly from the event if available
-        const sellerName = (nextSale as any).seller_name || 'Vendedor';
+        const sellerName = (nextSale as any).seller_name ? formatName((nextSale as any).seller_name) : 'Vendedor';
 
         // Use avatar from event, fallback to profile lookup only if missing
         let sellerAvatar = (nextSale as any).seller_avatar_url;
@@ -372,7 +373,7 @@ const DashboardContent = () => {
     // Create Sellers List for Ranking
     const sellers = profiles.map(profile => ({
       id: profile.id,
-      name: profile.full_name || 'Desconhecido',
+      name: formatName(profile.full_name || 'Desconhecido'),
       avatar: profile.avatar_url,
       deals: salesBySeller[profile.id] || 0,
       team: profile.team
