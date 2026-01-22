@@ -16,31 +16,31 @@ export interface AudioRule {
 const AUDIO_RULES: AudioRule[] = [
     {
         minInclusive: 0,
-        maxInclusive: 999,
+        maxInclusive: 999.99,
         voicePath: '/ElevenLabs_Vagner.mp3',
         playBell: true,
-        bellDelay: 3000
+        bellDelay: 0 // Ignored, calculated dynamically
     },
     {
         minInclusive: 1000,
-        maxInclusive: 1999,
-        voicePath: null, // Toca apenas o Sino (configurado via playBell)
+        maxInclusive: 1999.99,
+        voicePath: '/ElevenLabs_vagner_1k.mp3',
         playBell: true,
-        bellDelay: 0 // Imediato
+        bellDelay: 0 // Ignored, calculated dynamically
     },
     {
         minInclusive: 2000,
-        maxInclusive: 4999,
+        maxInclusive: 4999.99,
         voicePath: '/ElevenLabs_Vagner_2k.mp3',
         playBell: true,
-        bellDelay: 3000
+        bellDelay: 0 // Ignored, calculated dynamically
     },
     {
         minInclusive: 5000,
         maxInclusive: Number.MAX_SAFE_INTEGER,
         voicePath: '/ElevenLabs_Vagner_5k.mp3',
         playBell: true,
-        bellDelay: 3000
+        bellDelay: 0 // Ignored, calculated dynamically
     }
 ];
 

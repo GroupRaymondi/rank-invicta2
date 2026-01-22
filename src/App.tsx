@@ -309,35 +309,81 @@ const DashboardContent = () => {
             console.log('Attempting to play voice:', audioRule.voicePath);
             voicePlayerRef.current.src = audioRule.voicePath;
             voicePlayerRef.current.volume = 1.0;
+
             try {
-              voicePlayerRef.current.load();
+              // Wait for metadata to load to get duration
+              await new Promise((resolve, reject) => {
+                if (!voicePlayerRef.current) return reject('No player');
+
+                const onLoadedMetadata = () => {
+                  voicePlayerRef.current?.removeEventListener('loadedmetadata', onLoadedMetadata);
+                  voicePlayerRef.current?.removeEventListener('error', onError);
+                  resolve(true);
+                };
+
+                const onError = (e: any) => {
+                  voicePlayerRef.current?.removeEventListener('loadedmetadata', onLoadedMetadata);
+                  voicePlayerRef.current?.removeEventListener('error', onError);
+                  reject(e);
+                };
+
+                voicePlayerRef.current.addEventListener('loadedmetadata', onLoadedMetadata);
+                voicePlayerRef.current.addEventListener('error', onError);
+                voicePlayerRef.current.load();
+              });
+
+              const duration = voicePlayerRef.current.duration;
+              console.log('Voice duration:', duration);
+
+              // Calculate bell delay: Duration - 1 second (or 0 if duration < 1)
+              // Ensure it's at least 0
+              const bellDelay = Math.max(0, (duration - 1) * 1000);
+              console.log('Calculated bell delay:', bellDelay);
+
+              // Start voice
               await voicePlayerRef.current.play();
               console.log('Voice playing successfully');
+
+              // Schedule Bell
+              if (audioRule.playBell && bellPlayerRef.current) {
+                console.log('Scheduling bell in', bellDelay, 'ms');
+                setTimeout(async () => {
+                  if (bellPlayerRef.current) {
+                    console.log('Attempting to play bell: /sounds/Sino.mp3');
+                    bellPlayerRef.current.src = '/sounds/Sino.mp3';
+                    bellPlayerRef.current.volume = 1.0;
+                    try {
+                      await bellPlayerRef.current.play();
+                      console.log('Bell playing successfully');
+                    } catch (err) {
+                      console.error('Bell play failed:', err);
+                    }
+                  }
+                }, bellDelay);
+              }
+
             } catch (err: any) {
               console.error('Voice play failed:', err);
-              console.error('Error Name:', err?.name);
-              console.error('Error Message:', err?.message);
+              // Fallback: Play bell with 3s delay if voice fails
+              if (audioRule.playBell && bellPlayerRef.current) {
+                setTimeout(() => {
+                  if (bellPlayerRef.current) {
+                    bellPlayerRef.current.src = '/sounds/Sino.mp3';
+                    bellPlayerRef.current.play().catch(e => console.error('Bell fallback failed', e));
+                  }
+                }, 3000);
+              }
             }
           } else {
-            console.log('No voice path in rule or player ref missing');
-          }
-
-          // 2. Play Bell (if enabled)
-          if (audioRule.playBell && bellPlayerRef.current) {
-            console.log('Scheduling bell in', audioRule.bellDelay, 'ms');
-            setTimeout(async () => {
-              if (bellPlayerRef.current) {
-                console.log('Attempting to play bell: /sounds/Sino.mp3');
-                bellPlayerRef.current.src = '/sounds/Sino.mp3';
-                bellPlayerRef.current.volume = 1.0;
-                try {
-                  await bellPlayerRef.current.play();
-                  console.log('Bell playing successfully');
-                } catch (err) {
-                  console.error('Bell play failed:', err);
+            // No voice, play bell with 3s delay
+            if (audioRule.playBell && bellPlayerRef.current) {
+              setTimeout(() => {
+                if (bellPlayerRef.current) {
+                  bellPlayerRef.current.src = '/sounds/Sino.mp3';
+                  bellPlayerRef.current.play().catch(e => console.error('Bell only failed', e));
                 }
-              }
-            }, audioRule.bellDelay);
+              }, 3000);
+            }
           }
         } else {
           console.warn('No audio rule found for value:', entryValue);
