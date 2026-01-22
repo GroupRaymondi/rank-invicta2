@@ -107,26 +107,34 @@ const DashboardContent = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch Roles (Only VENDEDOR)
+        // Fetch Roles (Fetch all, filter in JS for robustness)
         const { data: rolesData, error: rolesError } = await supabase
           .from('user_roles')
-          .select('user_id')
-          .in('role', ['vendedor', 'Vendedor', 'VENDEDOR']);
+          .select('user_id, role');
 
         if (rolesError) throw rolesError;
 
-        const vendorIds = new Set(rolesData?.map(r => r.user_id) || []);
+        // Robust JS Filtering: Case-insensitive, trimmed
+        const vendorIds = new Set(
+          (rolesData || [])
+            .filter(r => r.role && r.role.toLowerCase().trim() === 'vendedor')
+            .map(r => r.user_id)
+        );
 
-        // Fetch Profiles (Active)
+        // Fetch Profiles (Fetch all, filter in JS)
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
-          .select('id, full_name, avatar_url, team')
-          .in('status', ['ativo', 'Ativo', 'ATIVO']);
+          .select('id, full_name, avatar_url, team, status');
 
         if (profilesError) throw profilesError;
 
-        // Filter profiles to only include vendors
-        const vendorProfiles = (profilesData || []).filter(p => vendorIds.has(p.id));
+        // Filter profiles: Must be in vendorIds AND have status 'ativo'
+        const vendorProfiles = (profilesData || []).filter(p =>
+          vendorIds.has(p.id) &&
+          p.status &&
+          p.status.toLowerCase().trim() === 'ativo'
+        );
+
         setProfiles(vendorProfiles);
 
         // Fetch Sales
