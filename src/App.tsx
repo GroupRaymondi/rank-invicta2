@@ -167,10 +167,18 @@ const DashboardContent = () => {
     const newSaleSubscription = supabase
       .channel('sales-events')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sales_events' }, (payload) => {
-        console.log('New Sale Event Detected:', payload);
-        // Always refresh data to ensure ranking is up to date, regardless of duplicate alert
+        console.log('Sale Event Detected:', payload);
+
+        // Always refresh data to ensure ranking/KPI is up to date
         fetchData();
 
+        // If it's a DELETE or UPDATE event, stop here. Do NOT trigger the alert.
+        if (payload.eventType === 'DELETE' || payload.eventType === 'UPDATE') {
+          console.log('Event is DELETE/UPDATE. Skipping alert.');
+          return;
+        }
+
+        // Only proceed for INSERT events
         const newEvent = payload.new as {
           id: string;
           seller_id: string;
