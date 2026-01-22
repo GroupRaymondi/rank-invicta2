@@ -166,7 +166,7 @@ const DashboardContent = () => {
     // Realtime Subscription for New Sales Alerts (Sales Events)
     const newSaleSubscription = supabase
       .channel('sales-events')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'sales_events' }, (payload) => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sales_events' }, (payload) => {
         console.log('New Sale Event Detected:', payload);
         // Always refresh data to ensure ranking is up to date, regardless of duplicate alert
         fetchData();
