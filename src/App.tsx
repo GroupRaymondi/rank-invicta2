@@ -111,7 +111,7 @@ const DashboardContent = () => {
         const { data: rolesData, error: rolesError } = await supabase
           .from('user_roles')
           .select('user_id')
-          .eq('role', 'vendedor');
+          .in('role', ['vendedor', 'Vendedor', 'VENDEDOR']);
 
         if (rolesError) throw rolesError;
 
@@ -121,7 +121,7 @@ const DashboardContent = () => {
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
           .select('id, full_name, avatar_url, team')
-          .eq('status', 'ativo');
+          .in('status', ['ativo', 'Ativo', 'ATIVO']);
 
         if (profilesError) throw profilesError;
 
