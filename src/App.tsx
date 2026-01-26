@@ -10,6 +10,7 @@ import { Podium } from './components/dashboard/Podium';
 import { supabase } from './lib/supabase';
 import { Loader2, Maximize2 } from 'lucide-react';
 import { getAudioRuleByEntryValue } from './lib/saleAudioRules';
+import { getRankingPeriod } from './lib/dateUtils';
 
 // Types for Supabase Data
 interface Profile {
@@ -137,14 +138,46 @@ const DashboardContent = () => {
 
         setProfiles(vendorProfiles);
 
-        // Fetch Sales
-        const { data: salesData, error: salesError } = await supabase
-          .from('seller_monthly_sales')
-          .select('seller_id, deals_closed, total_sales');
+        // Fetch Sales Events for the current ranking period
+        const { startDate } = getRankingPeriod();
+        console.log('Fetching ranking data from:', startDate.toISOString());
 
-        if (salesError) throw salesError;
+        const { data: eventsData, error: eventsError } = await supabase
+          .from('sales_events')
+          .select('*')
+          .gte('created_at', startDate.toISOString());
 
-        setSales(salesData || []);
+        if (eventsError) throw eventsError;
+
+        // Aggregate events into MonthlySales format
+        const salesMap = new Map<string, MonthlySales>();
+
+        (eventsData || []).forEach((event: any) => {
+          const sellerId = event.seller_id;
+          if (!sellerId) return;
+
+          const current = salesMap.get(sellerId) || {
+            seller_id: sellerId,
+            deals_closed: 0,
+            total_sales: 0
+          };
+
+          current.deals_closed += 1;
+
+          // Parse entry_value for total_sales (reusing logic from realtime if needed, or simple parse)
+          // Assuming DB has cleaner data, but let's be safe-ish
+          let val = 0;
+          if (typeof event.entry_value === 'number') val = event.entry_value;
+          else if (typeof event.entry_value === 'string') {
+            // Simple parse for aggregation, assuming standard format in DB
+            val = parseFloat(event.entry_value.replace(/[^0-9.-]+/g, ""));
+          }
+
+          current.total_sales += isNaN(val) ? 0 : val;
+          salesMap.set(sellerId, current);
+        });
+
+        setSales(Array.from(salesMap.values()));
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -154,14 +187,9 @@ const DashboardContent = () => {
 
     fetchData();
 
-    // Realtime Subscription for Ranking Updates (Monthly Sales)
-    const salesSubscription = supabase
-      .channel('sales_updates')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'seller_monthly_sales' }, (payload) => {
-        console.log('Monthly Sales Update:', payload);
-        fetchData();
-      })
-      .subscribe();
+    // Realtime Subscription for Ranking Updates (Now listening to sales_events mostly)
+    // We keep the sales-events subscription below which already calls fetchData()
+    // so we don't need a separate one for monthly_sales anymore.
 
     // Realtime Subscription for New Sales Alerts (Sales Events)
     const newSaleSubscription = supabase
@@ -260,7 +288,7 @@ const DashboardContent = () => {
       .subscribe();
 
     return () => {
-      salesSubscription.unsubscribe();
+      // salesSubscription.unsubscribe(); // Removed
       newSaleSubscription.unsubscribe();
     };
   }, []); // Removed profiles dependency as it's not needed for the subscription setup itself
@@ -442,7 +470,7 @@ const DashboardContent = () => {
     })).sort((a, b) => b.deals - a.deals);
 
     // Fixed Teams List
-    const KNOWN_TEAMS = ['Titans', 'Phoenix', 'Premium', 'Diamond', 'Legacy Global', 'Seguro Champions'];
+    const KNOWN_TEAMS = ['Titans', 'Phoenix', 'Premium', 'Diamond', 'Legacy Global'];
 
     // Create Teams Data
     const teamsMap: Record<string, Team> = {};
