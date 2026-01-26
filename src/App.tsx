@@ -559,10 +559,10 @@ const DashboardContent = () => {
           {/* 1. Logo & Name (Top) */}
           <div className="flex-none flex flex-col items-center justify-start relative z-20 pt-6">
             <div className="w-48 h-48 relative mb-2">
-              <img src="/logo-new.png" alt="Invicta Consulting" className="w-full h-full object-contain relative z-10" />
+              <img src="/logo-global-one.png" alt="Global One Center" className="w-full h-full object-contain relative z-10" />
             </div>
             <h1 className="text-3xl font-black tracking-tight text-white uppercase tracking-widest text-glow-accent text-center drop-shadow-lg">
-              INVICTA MATRIZ
+              GLOBAL ONE CENTER
             </h1>
           </div>
 
