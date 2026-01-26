@@ -302,28 +302,34 @@ const DashboardContent = () => {
       const nextSale = alertQueue[0];
 
       try {
-        // Use data directly from the event if available
-        const sellerName = (nextSale as any).seller_name ? formatName((nextSale as any).seller_name) : 'Vendedor';
-
         // Use avatar from event, fallback to profile lookup only if missing
         let sellerAvatar = (nextSale as any).seller_avatar_url;
+        let sellerName = (nextSale as any).seller_name ? formatName((nextSale as any).seller_name) : null;
 
-        if (!sellerAvatar) {
-          // Fallback: Find seller avatar from profiles (Local Lookup)
+        if (!sellerAvatar || !sellerName) {
+          // Fallback: Find seller profile (Local Lookup)
           let sellerProfile = profiles.find(p => p.id === nextSale.responsible_id);
 
           if (!sellerProfile) {
             // On-Demand Fetch
             const { data } = await supabase
               .from('profiles')
-              .select('avatar_url')
+              .select('full_name, avatar_url')
               .eq('id', nextSale.responsible_id)
               .single();
-            if (data) sellerAvatar = data.avatar_url;
+
+            if (data) {
+              if (!sellerAvatar) sellerAvatar = data.avatar_url;
+              if (!sellerName) sellerName = formatName(data.full_name);
+            }
           } else {
-            sellerAvatar = sellerProfile.avatar_url;
+            if (!sellerAvatar) sellerAvatar = sellerProfile.avatar_url;
+            if (!sellerName) sellerName = formatName(sellerProfile.full_name);
           }
         }
+
+        // Final fallback if still nothing
+        if (!sellerName) sellerName = 'Vendedor';
 
         // Parse amount (ensure it's a number)
         const entryValue = typeof nextSale.paid_amount === 'string'
