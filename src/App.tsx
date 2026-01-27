@@ -24,6 +24,7 @@ interface MonthlySales {
   seller_id: string;
   deals_closed: number;
   total_sales: number;
+  alerts?: number;
 }
 
 interface SaleAlertData {
@@ -138,46 +139,84 @@ const DashboardContent = () => {
 
         setProfiles(vendorProfiles);
 
-        // Fetch Sales Events for the current ranking period
+        // Fetch Sales Events for the current ranking period AND history for alerts (4 weeks)
         const { startDate } = getRankingPeriod();
-        console.log('Fetching ranking data from:', startDate.toISOString());
 
+        // Calculate 4 weeks ago for alerts
+        const fourWeeksAgo = new Date();
+        fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
+
+        console.log('Fetching ranking data from:', startDate.toISOString());
+        console.log('Fetching alert history from:', fourWeeksAgo.toISOString());
+
+        // Fetch events from 4 weeks ago to now
         const { data: eventsData, error: eventsError } = await supabase
           .from('sales_events')
           .select('*')
-          .gte('created_at', startDate.toISOString());
+          .gte('created_at', fourWeeksAgo.toISOString());
 
         if (eventsError) throw eventsError;
 
         // Aggregate events into MonthlySales format
         const salesMap = new Map<string, MonthlySales>();
+        const lastSaleDateMap = new Map<string, Date>();
 
         (eventsData || []).forEach((event: any) => {
           const sellerId = event.seller_id;
           if (!sellerId) return;
 
-          const current = salesMap.get(sellerId) || {
-            seller_id: sellerId,
-            deals_closed: 0,
-            total_sales: 0
-          };
+          const eventDate = new Date(event.created_at);
 
-          current.deals_closed += 1;
-
-          // Parse entry_value for total_sales (reusing logic from realtime if needed, or simple parse)
-          // Assuming DB has cleaner data, but let's be safe-ish
-          let val = 0;
-          if (typeof event.entry_value === 'number') val = event.entry_value;
-          else if (typeof event.entry_value === 'string') {
-            // Simple parse for aggregation, assuming standard format in DB
-            val = parseFloat(event.entry_value.replace(/[^0-9.-]+/g, ""));
+          // Track last sale date for alerts (using ALL fetched events)
+          const currentLastSale = lastSaleDateMap.get(sellerId);
+          if (!currentLastSale || eventDate > currentLastSale) {
+            lastSaleDateMap.set(sellerId, eventDate);
           }
 
-          current.total_sales += isNaN(val) ? 0 : val;
-          salesMap.set(sellerId, current);
+          // Filter for Ranking (only events within the current ranking period)
+          if (eventDate >= startDate) {
+            const current = salesMap.get(sellerId) || {
+              seller_id: sellerId,
+              deals_closed: 0,
+              total_sales: 0
+            };
+
+            current.deals_closed += 1;
+
+            // Parse entry_value for total_sales
+            let val = 0;
+            if (typeof event.entry_value === 'number') val = event.entry_value;
+            else if (typeof event.entry_value === 'string') {
+              val = parseFloat(event.entry_value.replace(/[^0-9.-]+/g, ""));
+            }
+
+            current.total_sales += isNaN(val) ? 0 : val;
+            salesMap.set(sellerId, current);
+          }
         });
 
-        setSales(Array.from(salesMap.values()));
+        // Calculate alerts for each seller
+        const now = new Date();
+        const salesWithAlerts = Array.from(salesMap.values()).map(sale => {
+          const lastSale = lastSaleDateMap.get(sale.seller_id);
+          let alerts = 0;
+
+          if (lastSale) {
+            const diffTime = Math.abs(now.getTime() - lastSale.getTime());
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            const weeksWithoutSale = Math.floor(diffDays / 7);
+
+            // Rule: 1 week = 1 alert, 2 weeks = 2 alerts, etc. Max 4.
+            alerts = Math.min(weeksWithoutSale, 4);
+          } else {
+            // No sales in last 4 weeks? That's 4 alerts.
+            alerts = 4;
+          }
+
+          return { ...sale, alerts };
+        });
+
+        setSales(salesWithAlerts);
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -461,19 +500,23 @@ const DashboardContent = () => {
   // Process Data
   const processedData = useMemo(() => {
     // Map sales by seller
-    const salesBySeller: Record<string, number> = {};
+    const salesMap: Record<string, MonthlySales> = {};
     sales.forEach(sale => {
-      salesBySeller[sale.seller_id] = (salesBySeller[sale.seller_id] || 0) + sale.deals_closed;
+      salesMap[sale.seller_id] = sale;
     });
 
     // Create Sellers List for Ranking
-    const sellers = profiles.map(profile => ({
-      id: profile.id,
-      name: formatName(profile.full_name || 'Desconhecido'),
-      avatar: profile.avatar_url,
-      deals: salesBySeller[profile.id] || 0,
-      team: profile.team
-    })).sort((a, b) => b.deals - a.deals);
+    const sellers = profiles.map(profile => {
+      const sale = salesMap[profile.id];
+      return {
+        id: profile.id,
+        name: formatName(profile.full_name || 'Desconhecido'),
+        avatar: profile.avatar_url,
+        deals: sale ? sale.deals_closed : 0,
+        alerts: sale?.alerts ?? 4, // Default to 4 alerts if no sales record found (inactive > 4 weeks)
+        team: profile.team
+      };
+    }).sort((a, b) => b.deals - a.deals);
 
     // Fixed Teams List
     const KNOWN_TEAMS = ['Titans', 'Phoenix', 'Premium', 'Diamond', 'Legacy Global'];

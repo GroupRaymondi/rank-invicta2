@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Medal, TrendingUp, Siren } from 'lucide-react';
+import { Medal, TrendingUp, Siren, AlertCircle } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 interface Seller {
@@ -7,6 +7,7 @@ interface Seller {
     name: string;
     avatar?: string;
     deals: number;
+    alerts?: number;
     team?: string;
 }
 
@@ -71,21 +72,28 @@ const RankItem: React.FC<{ seller: Seller; index: number }> = ({ seller, index }
 
             {/* Stats */}
             <div className="text-right">
-                <div className="flex items-center justify-end gap-1.5 text-sm font-medium text-yellow-500">
-                    {hasNoSales ? (
-                        <div className="flex items-center justify-end">
-                            <Siren className="w-6 h-6 text-red-600 fill-red-600 animate-[pulse_0.5s_ease-in-out_infinite] drop-shadow-[0_0_15px_rgba(220,38,38,1)]" />
-                        </div>
-                    ) : (
-                        <div className="flex flex-col items-end justify-center">
-                            <span className="text-2xl font-bold text-yellow-500 drop-shadow-[0_0_10px_rgba(234,179,8,0.5)]">
-                                {seller.deals}
-                            </span>
-                            <span className="text-[10px] text-white/40 uppercase tracking-wider font-medium">
-                                Processos
-                            </span>
+                <div className="flex items-center justify-end gap-3 text-sm font-medium text-yellow-500">
+
+                    {/* Inactivity Alerts */}
+                    {(seller.alerts || 0) > 0 && (
+                        <div className="flex items-center gap-1">
+                            {Array.from({ length: seller.alerts || 0 }).map((_, i) => (
+                                <Siren
+                                    key={i}
+                                    className="w-5 h-5 text-red-600 fill-red-600/20 animate-pulse drop-shadow-[0_0_8px_rgba(220,38,38,0.8)]"
+                                />
+                            ))}
                         </div>
                     )}
+
+                    <div className="flex flex-col items-end justify-center">
+                        <span className="text-2xl font-bold text-yellow-500 drop-shadow-[0_0_10px_rgba(234,179,8,0.5)]">
+                            {seller.deals}
+                        </span>
+                        <span className="text-[10px] text-white/40 uppercase tracking-wider font-medium">
+                            Processos
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>
