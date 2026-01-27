@@ -10,7 +10,7 @@ import { Podium } from './components/dashboard/Podium';
 import { supabase } from './lib/supabase';
 import { Loader2, Maximize2 } from 'lucide-react';
 import { getAudioRuleByEntryValue } from './lib/saleAudioRules';
-import { getRankingPeriod } from './lib/dateUtils';
+import { getRankingPeriod, getCurrentWeekOfMonth } from './lib/dateUtils';
 
 // Types for Supabase Data
 interface Profile {
@@ -198,19 +198,14 @@ const DashboardContent = () => {
         // Calculate alerts for each seller
         const now = new Date();
         const salesWithAlerts = Array.from(salesMap.values()).map(sale => {
-          const lastSale = lastSaleDateMap.get(sale.seller_id);
+          const currentWeek = getCurrentWeekOfMonth();
           let alerts = 0;
 
-          if (lastSale) {
-            const diffTime = Math.abs(now.getTime() - lastSale.getTime());
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            const weeksWithoutSale = Math.floor(diffDays / 7);
-
-            // Rule: 1 week = 1 alert, 2 weeks = 2 alerts, etc. Max 4.
-            alerts = Math.min(weeksWithoutSale, 4);
+          // If seller has NO sales in the current period, alerts = 1 (Fixed as per user request).
+          if (sale.deals_closed > 0) {
+            alerts = 0;
           } else {
-            // No sales in last 4 weeks? That's 4 alerts.
-            alerts = 4;
+            alerts = 1;
           }
 
           return { ...sale, alerts };
@@ -513,13 +508,13 @@ const DashboardContent = () => {
         name: formatName(profile.full_name || 'Desconhecido'),
         avatar: profile.avatar_url,
         deals: sale ? sale.deals_closed : 0,
-        alerts: sale?.alerts ?? 4, // Default to 4 alerts if no sales record found (inactive > 4 weeks)
+        alerts: sale ? sale.alerts : 1, // Default to 1 alert if no sales record found
         team: profile.team
       };
     }).sort((a, b) => b.deals - a.deals);
 
     // Fixed Teams List
-    const KNOWN_TEAMS = ['Titans', 'Phoenix', 'Premium', 'Diamond', 'Legacy Global'];
+    const KNOWN_TEAMS = ['Titans', 'Phoenix', 'Premium', 'Diamond', 'Legacy Global', 'Imperium', 'Invictus', 'Elite', 'Falcons', 'Blessed'];
 
     // Create Teams Data
     const teamsMap: Record<string, Team> = {};

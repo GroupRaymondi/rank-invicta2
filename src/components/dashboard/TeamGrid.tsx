@@ -14,17 +14,17 @@ export interface Team {
 
 const TeamCard: React.FC<{ team: Team }> = ({ team }) => (
     <div className={cn(
-        "relative overflow-hidden rounded-xl p-3 transition-all duration-300 group border flex flex-col justify-center flex-1 min-h-0", // Added flex-1 and min-h-0
+        "relative overflow-hidden rounded-lg p-2 transition-all duration-300 group border flex flex-col justify-center min-h-[60px]", // Compact height
         team.rank === 1 ? "bg-gradient-to-r from-yellow-500/20 to-black/60 border-yellow-500/30" :
             team.rank === 2 ? "bg-gradient-to-r from-gray-300/20 to-black/60 border-gray-300/30" :
                 team.rank === 3 ? "bg-gradient-to-r from-amber-700/20 to-black/60 border-amber-700/30" :
                     "bg-white/5 border-white/5 hover:bg-white/10"
     )}>
-        <div className="flex items-center justify-between gap-3 mb-2">
+        <div className="flex items-center justify-between gap-2">
             {/* Left: Rank & Info */}
-            <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
                 <div className={cn(
-                    "w-8 h-8 flex-none flex items-center justify-center rounded-lg font-bold text-sm shadow-lg",
+                    "w-6 h-6 flex-none flex items-center justify-center rounded font-bold text-xs shadow-lg",
                     team.rank === 1 ? "bg-yellow-500 text-black" :
                         team.rank === 2 ? "bg-gray-300 text-black" :
                             team.rank === 3 ? "bg-amber-700 text-white" :
@@ -36,19 +36,19 @@ const TeamCard: React.FC<{ team: Team }> = ({ team }) => (
                 <div className="flex-1 min-w-0">
                     <div className="flex items-baseline justify-between">
                         <h3 className={cn(
-                            "text-sm font-bold truncate tracking-wide uppercase",
+                            "text-xs font-bold truncate tracking-wide uppercase",
                             team.rank <= 3 ? "text-white" : "text-gray-300"
                         )}>
                             {team.name}
                         </h3>
                         <div className="flex items-center gap-1 text-yellow-500">
                             <Target className="w-3 h-3" />
-                            <span className="font-bold text-sm">{team.processes}</span>
+                            <span className="font-bold text-xs">{team.processes}</span>
                         </div>
                     </div>
 
                     {/* Progress Bar */}
-                    <div className="w-full bg-black/30 rounded-full h-1.5 mt-1.5 overflow-hidden border border-white/5">
+                    <div className="w-full bg-black/30 rounded-full h-1 mt-1 overflow-hidden border border-white/5">
                         <div
                             className={cn(
                                 "h-full rounded-full transition-all duration-1000 ease-out relative overflow-hidden",
@@ -64,31 +64,7 @@ const TeamCard: React.FC<{ team: Team }> = ({ team }) => (
             </div>
         </div>
 
-        {/* Footer: Members & Top 3 Members */}
-        <div className="flex flex-col gap-1 mt-auto">
-            <div className="flex items-center gap-1 text-[10px] text-gray-400 mb-1">
-                <Users className="w-3 h-3" />
-                {team.members} {team.members === 1 ? 'membro' : 'membros'}
-            </div>
 
-            {team.topMembers.length > 0 ? (
-                <div className="grid grid-cols-1 gap-0.5">
-                    {team.topMembers.slice(0, 3).map((member, idx) => (
-                        <div key={idx} className="flex justify-between items-center text-[10px]">
-                            <span className={cn(
-                                "truncate flex-1",
-                                idx === 0 && team.rank <= 3 ? "text-white font-medium" : "text-gray-400"
-                            )}>
-                                {idx + 1}. {member.name}
-                            </span>
-                            <span className="text-gray-600 font-mono ml-2">{member.processes}</span>
-                        </div>
-                    ))}
-                </div>
-            ) : (
-                <div className="text-[10px] text-gray-600 italic">Sem vendas</div>
-            )}
-        </div>
     </div>
 );
 
@@ -111,7 +87,7 @@ export const TeamGrid: React.FC<TeamGridProps> = ({ teams }) => {
                 </div>
             </div>
 
-            <div className="flex flex-col gap-2 flex-1 overflow-hidden relative z-10">
+            <div className="grid grid-cols-1 gap-2 flex-1 overflow-y-auto relative z-10 custom-scrollbar pr-1">
                 {teams.map((team) => (
                     <TeamCard key={team.id} team={team} />
                 ))}

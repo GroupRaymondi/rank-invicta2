@@ -80,19 +80,23 @@ const RankItem: React.FC<{ seller: Seller; index: number }> = ({ seller, index }
                             {Array.from({ length: seller.alerts || 0 }).map((_, i) => (
                                 <Siren
                                     key={i}
-                                    className="w-5 h-5 text-red-600 fill-red-600/20 animate-pulse drop-shadow-[0_0_8px_rgba(220,38,38,0.8)]"
+                                    className="w-5 h-5 text-red-700 fill-red-700 animate-pulse drop-shadow-[0_0_8px_rgba(185,28,28,0.8)]"
                                 />
                             ))}
                         </div>
                     )}
 
                     <div className="flex flex-col items-end justify-center">
-                        <span className="text-2xl font-bold text-yellow-500 drop-shadow-[0_0_10px_rgba(234,179,8,0.5)]">
-                            {seller.deals}
-                        </span>
-                        <span className="text-[10px] text-white/40 uppercase tracking-wider font-medium">
-                            Processos
-                        </span>
+                        {!hasNoSales && (
+                            <>
+                                <span className="text-2xl font-bold text-yellow-500 drop-shadow-[0_0_10px_rgba(234,179,8,0.5)]">
+                                    {seller.deals}
+                                </span>
+                                <span className="text-[10px] text-white/40 uppercase tracking-wider font-medium">
+                                    Processos
+                                </span>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>
