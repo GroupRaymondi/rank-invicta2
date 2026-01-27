@@ -8,9 +8,9 @@ import { TeamGrid, type Team } from './components/dashboard/TeamGrid';
 import { SalesAlert } from './components/dashboard/SalesAlert';
 import { Podium } from './components/dashboard/Podium';
 import { supabase } from './lib/supabase';
-import { Loader2, Maximize2 } from 'lucide-react';
+import { Loader2, Maximize2, Rocket } from 'lucide-react';
 import { getAudioRuleByEntryValue } from './lib/saleAudioRules';
-import { getRankingPeriod, getCurrentWeekOfMonth } from './lib/dateUtils';
+
 
 // Types for Supabase Data
 interface Profile {
@@ -25,6 +25,9 @@ interface MonthlySales {
   deals_closed: number;
   total_sales: number;
   alerts?: number;
+  seller_name?: string;
+  avatar_url?: string;
+  team?: string;
 }
 
 interface SaleAlertData {
@@ -114,101 +117,74 @@ const DashboardContent = () => {
           .from('user_roles')
           .select('user_id, role');
 
-        if (rolesError) throw rolesError;
+        if (rolesError) {
+          console.error('Error fetching roles:', rolesError);
+          throw rolesError;
+        }
+
+        console.log('Raw Roles Data:', rolesData);
 
         // Robust JS Filtering: Case-insensitive, trimmed
         const vendorIds = new Set(
           (rolesData || [])
-            .filter(r => r.role && r.role.toLowerCase().trim() === 'vendedor')
+            .filter(r => {
+              const role = (r.role || '').toLowerCase().trim();
+              return role === 'vendedor' || role === 'seller' || role === 'sales';
+            })
             .map(r => r.user_id)
         );
 
-        // Fetch Profiles (Fetch all, filter in JS)
+        console.log('Filtered Vendor IDs:', Array.from(vendorIds));
+
+        // Fetch Profiles (Still needed for Alert Fallback)
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
           .select('id, full_name, avatar_url, team, status');
 
-        if (profilesError) throw profilesError;
+        if (profilesError) {
+          console.error('Error fetching profiles:', profilesError);
+          throw profilesError;
+        }
 
-        // Filter profiles: Must be in vendorIds AND have status 'ativo'
+        console.log('Raw Profiles Data:', profilesData);
+
+        // Filter profiles: Must be in vendorIds AND have status 'ativo' or 'active'
         const vendorProfiles = (profilesData || []).filter(p =>
           vendorIds.has(p.id) &&
           p.status &&
-          p.status.toLowerCase().trim() === 'ativo'
+          (p.status.toLowerCase().trim() === 'ativo' || p.status.toLowerCase().trim() === 'active')
         );
+
+        console.log('Final Vendor Profiles:', vendorProfiles);
 
         setProfiles(vendorProfiles);
 
-        // Fetch Sales Events for the current ranking period AND history for alerts (4 weeks)
-        const { startDate } = getRankingPeriod();
+        // Fetch Ranking from RPC
+        console.log('Fetching weekly ranking from RPC...');
+        const { data: rankingData, error: rankingError } = await supabase
+          .rpc('get_weekly_ranking_for_date', {
+            reference_date: new Date().toISOString().split('T')[0] // Pass YYYY-MM-DD
+          });
 
-        // Calculate 4 weeks ago for alerts
-        const fourWeeksAgo = new Date();
-        fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
+        if (rankingError) {
+          console.error('Error fetching ranking from RPC:', rankingError);
+          throw rankingError;
+        }
 
-        console.log('Fetching ranking data from:', startDate.toISOString());
-        console.log('Fetching alert history from:', fourWeeksAgo.toISOString());
+        console.log('RPC Ranking Data:', rankingData);
 
-        // Fetch events from 4 weeks ago to now
-        const { data: eventsData, error: eventsError } = await supabase
-          .from('sales_events')
-          .select('*')
-          .gte('created_at', fourWeeksAgo.toISOString());
-
-        if (eventsError) throw eventsError;
-
-        // Aggregate events into MonthlySales format
-        const salesMap = new Map<string, MonthlySales>();
-        const lastSaleDateMap = new Map<string, Date>();
-
-        (eventsData || []).forEach((event: any) => {
-          const sellerId = event.seller_id;
-          if (!sellerId) return;
-
-          const eventDate = new Date(event.created_at);
-
-          // Track last sale date for alerts (using ALL fetched events)
-          const currentLastSale = lastSaleDateMap.get(sellerId);
-          if (!currentLastSale || eventDate > currentLastSale) {
-            lastSaleDateMap.set(sellerId, eventDate);
-          }
-
-          // Filter for Ranking (only events within the current ranking period)
-          if (eventDate >= startDate) {
-            const current = salesMap.get(sellerId) || {
-              seller_id: sellerId,
-              deals_closed: 0,
-              total_sales: 0
-            };
-
-            current.deals_closed += 1;
-
-            // Parse entry_value for total_sales
-            let val = 0;
-            if (typeof event.entry_value === 'number') val = event.entry_value;
-            else if (typeof event.entry_value === 'string') {
-              val = parseFloat(event.entry_value.replace(/[^0-9.-]+/g, ""));
-            }
-
-            current.total_sales += isNaN(val) ? 0 : val;
-            salesMap.set(sellerId, current);
-          }
-        });
-
-        // Calculate alerts for each seller
-        const now = new Date();
-        const salesWithAlerts = Array.from(salesMap.values()).map(sale => {
-          const currentWeek = getCurrentWeekOfMonth();
-          let alerts = 0;
-
-          // If seller has NO sales in the current period, alerts = 1 (Fixed as per user request).
-          if (sale.deals_closed > 0) {
-            alerts = 0;
-          } else {
-            alerts = 1;
-          }
-
-          return { ...sale, alerts };
+        // Map RPC data to MonthlySales format
+        const salesWithAlerts = (rankingData || []).map((item: any) => {
+          const deals = Number(item.sales_count || 0);
+          return {
+            seller_id: item.seller_id,
+            deals_closed: deals,
+            total_sales: Number(item.total_entry_value || 0),
+            alerts: deals > 0 ? 0 : 1,
+            seller_name: item.seller_name,
+            avatar_url: item.avatar_url,
+            team: item.team
+          };
         });
 
         setSales(salesWithAlerts);
@@ -494,24 +470,15 @@ const DashboardContent = () => {
 
   // Process Data
   const processedData = useMemo(() => {
-    // Map sales by seller
-    const salesMap: Record<string, MonthlySales> = {};
-    sales.forEach(sale => {
-      salesMap[sale.seller_id] = sale;
-    });
-
-    // Create Sellers List for Ranking
-    const sellers = profiles.map(profile => {
-      const sale = salesMap[profile.id];
-      return {
-        id: profile.id,
-        name: formatName(profile.full_name || 'Desconhecido'),
-        avatar: profile.avatar_url,
-        deals: sale ? sale.deals_closed : 0,
-        alerts: sale ? sale.alerts : 1, // Default to 1 alert if no sales record found
-        team: profile.team
-      };
-    }).sort((a, b) => b.deals - a.deals);
+    // Use sales directly as it comes from RPC which is the source of truth
+    const sellers = sales.map(sale => ({
+      id: sale.seller_id,
+      name: formatName(sale.seller_name || 'Desconhecido'),
+      avatar: sale.avatar_url,
+      deals: sale.deals_closed,
+      alerts: sale.alerts,
+      team: sale.team
+    })).sort((a, b) => b.deals - a.deals);
 
     // Fixed Teams List
     const KNOWN_TEAMS = ['Titans', 'Phoenix', 'Premium', 'Diamond', 'Legacy Global', 'Imperium', 'Invictus', 'Elite', 'Falcons', 'Blessed'];
@@ -702,51 +669,93 @@ const DashboardContent = () => {
           </div>
         </button>
 
-        {/* Test Alert Button */}
+        {/* Test Loop Button */}
         <button
-          onClick={() => {
-            const randomProfile = profiles.length > 0
-              ? profiles[Math.floor(Math.random() * profiles.length)]
-              : { id: 'test-id' };
-
-            const testValues = [500, 1000, 2500, 5000];
-            const testValue = testValues[Math.floor(Math.random() * testValues.length)];
-
-            // Play audio for test alert too
-            const audioRule = getAudioRuleByEntryValue(testValue);
-            if (audioRule) {
-              if (audioRule.voicePath && voicePlayerRef.current) {
-                voicePlayerRef.current.src = audioRule.voicePath;
-                voicePlayerRef.current.load();
-                voicePlayerRef.current.play().catch(e => console.error(e));
-              }
-              if (audioRule.playBell && bellPlayerRef.current) {
-                setTimeout(() => {
-                  if (bellPlayerRef.current) {
-                    bellPlayerRef.current.src = '/sounds/Sino.mp3';
-                    bellPlayerRef.current.play().catch(e => console.error(e));
-                  }
-                }, audioRule.bellDelay);
-              }
+          onClick={async () => {
+            if (profiles.length === 0) {
+              console.warn('No profiles available for test loop');
+              return;
             }
 
-            const mockSale = {
-              id: `test-${Date.now()}`,
-              responsible_id: randomProfile.id,
-              created_by: randomProfile.id,
-              process_type_name: ['VISTO T', 'GREEN CARD', 'CIDADANIA', 'CONSULTORIA'][Math.floor(Math.random() * 4)],
-              paid_amount: testValue
-            };
-            setAlertQueue(prev => [...prev, mockSale]);
+            console.log('Starting Test Loop with', profiles.length, 'profiles');
+
+            // Shuffle profiles for variety
+            const shuffled = [...profiles].sort(() => Math.random() - 0.5);
+
+            for (const profile of shuffled) {
+              const testValue = [500, 1500, 2500, 5000][Math.floor(Math.random() * 4)];
+              const processName = ['VISTO T', 'GREEN CARD', 'CIDADANIA', 'CONSULTORIA'][Math.floor(Math.random() * 4)];
+
+              console.log('Queueing test alert for:', profile.full_name);
+
+              setAlertQueue(prev => [...prev, {
+                id: `test-${Date.now()}-${profile.id}`,
+                responsible_id: profile.id,
+                created_by: profile.id,
+                process_type_name: processName,
+                paid_amount: testValue,
+                seller_name: formatName(profile.full_name),
+                seller_avatar_url: profile.avatar_url
+              }]);
+
+              // Add a small delay between adding to queue to avoid batching issues (though queue handles it)
+              await new Promise(r => setTimeout(r, 500));
+            }
           }}
           className="group flex items-center gap-3 px-4 py-3 bg-slate-900/80 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl border border-white/10 hover:border-white/20 backdrop-blur-md transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1"
-          title="Testar Alerta"
+          title="Loop de Teste"
         >
           <span className="text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 -translate-x-2 group-hover:translate-x-0">
-            Testar Alerta
+            Loop de Teste
           </span>
-          <div className="p-1 rounded-lg bg-red-500/20 text-red-400 group-hover:bg-red-500 group-hover:text-white transition-all duration-300">
-            🚀
+          <div className="p-1 rounded-lg bg-purple-500/20 text-purple-400 group-hover:bg-purple-500 group-hover:text-white transition-all duration-300">
+            �
+          </div>
+        </button>
+
+        {/* Test Single Event Button (Red Rocket) */}
+        <button
+          onClick={async () => {
+            // Fallback profile if no profiles are loaded
+            let profile;
+
+            if (profiles.length > 0) {
+              // Pick a random profile
+              profile = profiles[Math.floor(Math.random() * profiles.length)];
+            } else {
+              // Create a mock profile if none exist
+              profile = {
+                id: 'test-fallback-id',
+                full_name: 'Vendedor Teste',
+                avatar_url: null,
+                team: 'Test Team'
+              };
+              console.log('Using fallback test profile as no profiles are loaded');
+            }
+
+            const testValue = [500, 1500, 2500, 5000][Math.floor(Math.random() * 4)];
+            const processName = ['VISTO T', 'GREEN CARD', 'CIDADANIA', 'CONSULTORIA'][Math.floor(Math.random() * 4)];
+
+            console.log('Triggering single test alert for:', profile.full_name);
+
+            setAlertQueue(prev => [...prev, {
+              id: `test-single-${Date.now()}-${profile.id}`,
+              responsible_id: profile.id,
+              created_by: profile.id,
+              process_type_name: processName,
+              paid_amount: testValue,
+              seller_name: formatName(profile.full_name),
+              seller_avatar_url: profile.avatar_url || undefined
+            }]);
+          }}
+          className="group flex items-center gap-3 px-4 py-3 bg-red-500/80 hover:bg-red-600 text-white rounded-xl border border-white/10 hover:border-white/20 backdrop-blur-md transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1"
+          title="Evento Teste"
+        >
+          <span className="text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 -translate-x-2 group-hover:translate-x-0">
+            Evento Teste
+          </span>
+          <div className="p-1 rounded-lg bg-white/20 group-hover:bg-white/30 transition-all duration-300">
+            <Rocket className="w-5 h-5" />
           </div>
         </button>
       </div>

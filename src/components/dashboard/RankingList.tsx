@@ -104,7 +104,7 @@ const RankItem: React.FC<{ seller: Seller; index: number }> = ({ seller, index }
     );
 };
 
-export const RankingList: React.FC<RankingListProps> = ({ sellers }) => {
+export const RankingList: React.FC<RankingListProps> = ({ sellers = [] }) => {
     const [page, setPage] = useState(0);
     const ITEMS_PER_PAGE = 12; // 15 total slots - 3 top = 12 slots for the rest
 
@@ -155,9 +155,16 @@ export const RankingList: React.FC<RankingListProps> = ({ sellers }) => {
             </div>
 
             <div className="flex-1 overflow-y-auto pr-2 space-y-2 custom-scrollbar relative z-10">
-                {displayItems.map((seller) => (
-                    <RankItem key={seller.id} seller={seller} index={seller.originalIndex} />
-                ))}
+                {displayItems.length > 0 ? (
+                    displayItems.map((seller) => (
+                        <RankItem key={seller.id} seller={seller} index={seller.originalIndex} />
+                    ))
+                ) : (
+                    <div className="flex flex-col items-center justify-center h-full text-gray-400 opacity-50">
+                        <AlertCircle className="w-12 h-12 mb-2" />
+                        <span className="text-sm font-medium">Nenhum vendedor no ranking</span>
+                    </div>
+                )}
             </div>
         </div>
     );
