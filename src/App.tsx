@@ -141,7 +141,7 @@ const DashboardContent = () => {
 
         // Map RPC data to MonthlySales format
         const salesWithAlerts = (rankingData || []).map((item: any) => {
-          const deals = Number(item.sales_count || 0);
+          const deals = Number(item.total_lives || 0);
           return {
             seller_id: item.seller_id,
             deals_closed: deals,
