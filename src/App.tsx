@@ -112,31 +112,7 @@ const DashboardContent = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch Roles (Fetch all, filter in JS for robustness)
-        const { data: rolesData, error: rolesError } = await supabase
-          .from('user_roles')
-          .select('user_id, role');
-
-        if (rolesError) {
-          console.error('Error fetching roles:', rolesError);
-          throw rolesError;
-        }
-
-        console.log('Raw Roles Data:', rolesData);
-
-        // Robust JS Filtering: Case-insensitive, trimmed
-        const vendorIds = new Set(
-          (rolesData || [])
-            .filter(r => {
-              const role = (r.role || '').toLowerCase().trim();
-              return role === 'vendedor' || role === 'seller' || role === 'sales';
-            })
-            .map(r => r.user_id)
-        );
-
-        console.log('Filtered Vendor IDs:', Array.from(vendorIds));
-
-        // Fetch Profiles (Still needed for Alert Fallback)
+        // Fetch Profiles (All System Users)
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
           .select('id, full_name, avatar_url, team, status');
@@ -146,18 +122,8 @@ const DashboardContent = () => {
           throw profilesError;
         }
 
-        console.log('Raw Profiles Data:', profilesData);
-
-        // Filter profiles: Must be in vendorIds AND have status 'ativo' or 'active'
-        const vendorProfiles = (profilesData || []).filter(p =>
-          vendorIds.has(p.id) &&
-          p.status &&
-          (p.status.toLowerCase().trim() === 'ativo' || p.status.toLowerCase().trim() === 'active')
-        );
-
-        console.log('Final Vendor Profiles:', vendorProfiles);
-
-        setProfiles(vendorProfiles);
+        console.log('All System Profiles:', profilesData);
+        setProfiles(profilesData || []);
 
         // Fetch Ranking from RPC
         console.log('Fetching weekly ranking from RPC...');
@@ -205,7 +171,7 @@ const DashboardContent = () => {
     const newSaleSubscription = supabase
       .channel('sales-events')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sales_events' }, (payload) => {
-        console.log('Sale Event Detected:', payload);
+        console.log('REALTIME EVENT RECEIVED:', payload);
 
         // Always refresh data to ensure ranking/KPI is up to date
         fetchData();
@@ -227,6 +193,8 @@ const DashboardContent = () => {
           process_type: string;
           sales_process_id: string;
         };
+
+        console.log('Processing INSERT event:', newEvent);
 
         const rawValue = newEvent.entry_value;
         let entryVal: number = 0;
@@ -279,6 +247,8 @@ const DashboardContent = () => {
         processedSaleIds.current.add(newEvent.id);
         processedProcessValues.current.set(newEvent.sales_process_id, entryVal);
 
+        console.log('Queueing Alert for:', newEvent.seller_name, entryVal);
+
         // Audio logic moved to queue processing to sync with visual alert
 
 
@@ -295,7 +265,9 @@ const DashboardContent = () => {
         // Also refresh data to ensure ranking is up to date
         fetchData();
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.log('REALTIME SUBSCRIPTION STATUS:', status);
+      });
 
     return () => {
       // salesSubscription.unsubscribe(); // Removed
@@ -321,16 +293,23 @@ const DashboardContent = () => {
           let sellerProfile = profiles.find(p => p.id === nextSale.responsible_id);
 
           if (!sellerProfile) {
-            // On-Demand Fetch
-            const { data } = await supabase
-              .from('profiles')
-              .select('full_name, avatar_url')
-              .eq('id', nextSale.responsible_id)
-              .single();
+            // Skip DB fetch for test IDs to avoid 400 errors
+            if (nextSale.responsible_id.startsWith('test-')) {
+              console.warn('Skipping DB fetch for test ID:', nextSale.responsible_id);
+              // Use fallback name if not already set
+              if (!sellerName) sellerName = 'Vendedor Teste';
+            } else {
+              // On-Demand Fetch
+              const { data } = await supabase
+                .from('profiles')
+                .select('full_name, avatar_url')
+                .eq('id', nextSale.responsible_id)
+                .single();
 
-            if (data) {
-              if (!sellerAvatar) sellerAvatar = data.avatar_url;
-              if (!sellerName) sellerName = formatName(data.full_name);
+              if (data) {
+                if (!sellerAvatar) sellerAvatar = data.avatar_url;
+                if (!sellerName) sellerName = formatName(data.full_name);
+              }
             }
           } else {
             if (!sellerAvatar) sellerAvatar = sellerProfile.avatar_url;
