@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export const Login: React.FC = () => {
+    const navigate = useNavigate();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
@@ -20,8 +22,12 @@ export const Login: React.FC = () => {
             });
 
             if (error) throw error;
+
+            // Login success - Redirect to Admin Dashboard
+            navigate('/admin');
+
         } catch (err: any) {
-            setError(err.message || 'Erro ao fazer login');
+            setError(err.message || 'Erro ao fazer login. Verifique suas credenciais.');
         } finally {
             setLoading(false);
         }
@@ -35,12 +41,12 @@ export const Login: React.FC = () => {
 
             <div className="relative z-10 w-full max-w-md p-8">
                 <div className="flex flex-col items-center mb-8">
-                    <div className="w-24 h-24 relative group mb-6">
+                    <div className="w-32 h-32 relative group mb-6">
                         <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                        <img src="/logo.png" alt="Invicta Consulting" className="w-full h-full object-contain drop-shadow-[0_0_25px_rgba(14,165,233,0.4)] relative z-10" />
+                        <img src="/logo-global-one.png" alt="Global One Center" className="w-full h-full object-contain drop-shadow-[0_0_25px_rgba(14,165,233,0.4)] relative z-10" />
                     </div>
                     <h1 className="text-3xl font-bold text-white uppercase tracking-widest text-glow text-center">
-                        Invicta Consulting
+                        GLOBAL ONE CENTER
                     </h1>
                     <p className="text-gray-400 mt-2 text-sm uppercase tracking-wider">Acesso Restrito</p>
                 </div>
