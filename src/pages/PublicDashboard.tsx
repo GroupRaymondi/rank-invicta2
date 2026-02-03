@@ -463,14 +463,19 @@ export const PublicDashboard = () => {
         // Fixed Teams List
         const KNOWN_TEAMS = ['Titans', 'Phoenix', 'Premium', 'Diamond', 'Legacy Global', 'Imperium', 'Invictus', 'Elite', 'Falcons', 'Blessed'];
 
+        // Helper to normalize keys (trim + lowercase)
+        const normalize = (s: string) => s.trim().toLowerCase();
+
         // Create Teams Data
+        // Key = normalized name, Value = Team Object
         const teamsMap: Record<string, Team> = {};
 
         // Initialize known teams
         KNOWN_TEAMS.forEach(teamName => {
-            teamsMap[teamName] = {
-                id: teamName,
-                name: teamName,
+            const key = normalize(teamName);
+            teamsMap[key] = {
+                id: key,
+                name: teamName, // Canonical Display Name
                 amount: 0,
                 members: 0,
                 rank: 0,
@@ -482,14 +487,17 @@ export const PublicDashboard = () => {
         sellers.forEach(seller => {
             if (!seller.team) return;
 
-            let teamName = seller.team;
-            if (teamName === 'Titãs') teamName = 'Titans';
-            if (teamName === 'Canadá' || teamName === 'Canada') teamName = 'Diamond';
+            let rawTeamName = seller.team.trim();
+            // Handle known aliases
+            if (rawTeamName === 'Titãs') rawTeamName = 'Titans';
+            if (rawTeamName === 'Canadá' || rawTeamName === 'Canada') rawTeamName = 'Diamond';
 
-            if (!teamsMap[teamName]) {
-                teamsMap[teamName] = {
-                    id: teamName,
-                    name: teamName,
+            const key = normalize(rawTeamName);
+
+            if (!teamsMap[key]) {
+                teamsMap[key] = {
+                    id: key,
+                    name: rawTeamName,
                     amount: 0,
                     members: 0,
                     rank: 0,
@@ -498,20 +506,24 @@ export const PublicDashboard = () => {
                 };
             }
 
-            const team = teamsMap[teamName];
+            const team = teamsMap[key];
             team.members += 1;
             team.processes += seller.deals;
             team.topMembers.push({ name: seller.name, processes: seller.deals });
         });
 
-        const teams = Object.values(teamsMap).sort((a, b) => b.processes - a.processes).map((team, index) => ({
-            ...team,
-            rank: index + 1,
-            topMembers: team.topMembers
-                .filter(m => m.processes > 0)
-                .sort((a, b) => b.processes - a.processes)
-                .slice(0, 3)
-        }));
+        const teams = Object.values(teamsMap)
+            // Filter: remove teams with 0 members as requested
+            .filter(team => team.members > 0)
+            .sort((a, b) => b.processes - a.processes)
+            .map((team, index) => ({
+                ...team,
+                rank: index + 1,
+                topMembers: team.topMembers
+                    .filter(m => m.processes > 0)
+                    .sort((a, b) => b.processes - a.processes)
+                    .slice(0, 3)
+            }));
 
         const totalProcesses = sellers.reduce((acc, seller) => acc + seller.deals, 0);
 
