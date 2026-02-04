@@ -1,6 +1,7 @@
 export type AudioKey =
     | 'ElevenLabs_Vagner'
     | 'Sino'
+    | 'ElevenLabs_Vagner_1k'
     | 'ElevenLabs_Vagner_2k'
     | 'ElevenLabs_Vagner_5k'
     | null;
@@ -18,29 +19,29 @@ const AUDIO_RULES: AudioRule[] = [
         minInclusive: 0,
         maxInclusive: 999.99,
         voicePath: '/ElevenLabs_Vagner.mp3',
-        playBell: true,
-        bellDelay: 0 // Ignored, calculated dynamically
+        playBell: false,
+        bellDelay: 0
     },
     {
         minInclusive: 1000,
         maxInclusive: 1999.99,
-        voicePath: '/ElevenLabs_vagner_1k.mp3',
-        playBell: true,
-        bellDelay: 0 // Ignored, calculated dynamically
+        voicePath: '/ElevenLabs_Vagner_1k.mp3',
+        playBell: false,
+        bellDelay: 0
     },
     {
         minInclusive: 2000,
-        maxInclusive: 4999.99,
+        maxInclusive: 2499.99,
         voicePath: '/ElevenLabs_Vagner_2k.mp3',
-        playBell: true,
-        bellDelay: 0 // Ignored, calculated dynamically
+        playBell: false,
+        bellDelay: 0
     },
     {
-        minInclusive: 5000,
+        minInclusive: 2500,
         maxInclusive: Number.MAX_SAFE_INTEGER,
         voicePath: '/ElevenLabs_Vagner_5k.mp3',
-        playBell: true,
-        bellDelay: 0 // Ignored, calculated dynamically
+        playBell: false,
+        bellDelay: 0
     }
 ];
 
