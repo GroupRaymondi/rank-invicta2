@@ -13,6 +13,13 @@ interface SaleEvent {
     process_type: string;
 }
 
+const countProcessTypes = (typeStr: string | null | undefined): number => {
+    if (!typeStr) return 1; // Default to 1 if empty
+    // Split by '+' or ',' and filter empty strings
+    const parts = typeStr.split(/[\+,]/).map(s => s.trim()).filter(s => s.length > 0);
+    return parts.length || 1;
+};
+
 export const SalesTable = () => {
     const [sales, setSales] = useState<SaleEvent[]>([]);
     const [loading, setLoading] = useState(true);
@@ -222,11 +229,11 @@ export const SalesTable = () => {
                                     )}
                                 </td>
 
-                                {/* Calculated Total Process (1 + Dependents) */}
+                                {/* Calculated Total Process (Process Types + Dependents [Max 2]) */}
                                 <td className="px-6 py-4 text-center font-bold text-yellow-500">
                                     {editingId === sale.id
-                                        ? 1 + (typeof editValue === 'number' ? editValue : 0)
-                                        : 1 + (sale.dependents_count || 0)}
+                                        ? countProcessTypes(sale.process_type) + Math.min(typeof editValue === 'number' ? editValue : 0, 2)
+                                        : countProcessTypes(sale.process_type) + Math.min(sale.dependents_count || 0, 2)}
                                 </td>
 
                                 {/* Actions */}
