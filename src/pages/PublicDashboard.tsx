@@ -176,6 +176,11 @@ export const PublicDashboard = () => {
 
                 // Always refresh data to ensure ranking/KPI is up to date
                 fetchData();
+                // Double check after 2 seconds to ensure DB commit propagation/latency doesn't result in stale data
+                setTimeout(() => {
+                    console.log('Refreshing data (delayed check)...');
+                    fetchData();
+                }, 2000);
 
                 // If it's a DELETE event, stop here.
                 if (payload.eventType === 'DELETE') {
@@ -406,14 +411,16 @@ export const PublicDashboard = () => {
 
                         } catch (err: any) {
                             console.error('Voice play failed:', err);
-                            // Fallback: Play bell with 3s delay if voice fails
-                            if (audioRule.playBell && bellPlayerRef.current) {
+                            // Fallback: ALWAYS Play bell with 1s delay if voice fails (regardless of rule)
+                            // This ensures we never have a silent event if the voice fails (e.g. network error)
+                            if (bellPlayerRef.current) {
+                                console.log('Voice failed, triggering fallback bell');
                                 setTimeout(() => {
                                     if (bellPlayerRef.current) {
                                         bellPlayerRef.current.src = '/sounds/Sino.mp3';
                                         bellPlayerRef.current.play().catch(e => console.error('Bell fallback failed', e));
                                     }
-                                }, 3000);
+                                }, 1000);
                             }
                         }
                     } else {
