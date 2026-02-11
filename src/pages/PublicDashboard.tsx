@@ -177,13 +177,13 @@ export const PublicDashboard = () => {
                 // Always refresh data to ensure ranking/KPI is up to date
                 fetchData();
 
-                // If it's a DELETE or UPDATE event, stop here. Do NOT trigger the alert.
-                if (payload.eventType === 'DELETE' || payload.eventType === 'UPDATE') {
-                    console.log('Event is DELETE/UPDATE. Skipping alert.');
+                // If it's a DELETE event, stop here.
+                if (payload.eventType === 'DELETE') {
+                    console.log('Event is DELETE. Skipping alert.');
                     return;
                 }
 
-                // Only proceed for INSERT events
+                // Only proceed for INSERT or UPDATE events
                 const newEvent = payload.new as {
                     id: string;
                     seller_id: string;
@@ -195,7 +195,7 @@ export const PublicDashboard = () => {
                     sales_process_id: string;
                 };
 
-                console.log('Processing INSERT event:', newEvent);
+                console.log(`Processing ${payload.eventType} event:`, newEvent);
 
                 const rawValue = newEvent.entry_value;
                 let entryVal: number = 0;
@@ -232,7 +232,9 @@ export const PublicDashboard = () => {
 
                 // De-duplication check:
                 // 1. Check if exact event ID was already processed (strict duplicate)
-                if (processedSaleIds.current.has(newEvent.id)) {
+                // ONLY block if it's an INSERT (replaying same event). 
+                // If it's UPDATE, we allow re-processing (assuming value changed, checked below)
+                if (payload.eventType === 'INSERT' && processedSaleIds.current.has(newEvent.id)) {
                     console.log('Duplicate event ID ignored:', newEvent.id);
                     return;
                 }
