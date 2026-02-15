@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Search, Filter, Edit2, Check, X, Loader2 } from 'lucide-react';
-import { formatName } from '../../lib/utils'; // Assumindo que formatName existe em utils
+import { formatName } from '../../lib/utils';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface SaleEvent {
     id: string;
@@ -11,16 +12,21 @@ interface SaleEvent {
     dependents_count: number;
     created_at: string;
     process_type: string;
+    seller_id: string; // Needed for filtering
 }
 
 const countProcessTypes = (typeStr: string | null | undefined): number => {
-    if (!typeStr) return 1; // Default to 1 if empty
-    // Split by '+' or ',' and filter empty strings
+    if (!typeStr) return 1;
     const parts = typeStr.split(/[\+,]/).map(s => s.trim()).filter(s => s.length > 0);
     return parts.length || 1;
 };
 
-export const SalesTable = () => {
+interface SalesTableProps {
+    isAdmin?: boolean;
+}
+
+export const SalesTable = ({ isAdmin = false }: SalesTableProps) => {
+    const { user } = useAuth();
     const [sales, setSales] = useState<SaleEvent[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -28,6 +34,8 @@ export const SalesTable = () => {
     const [editValue, setEditValue] = useState<number | string>(0);
     const [updating, setUpdating] = useState(false);
     const [selectedWeek, setSelectedWeek] = useState<string>('current');
+
+    // ... rest of component
 
     // Generate weeks options (Current + 4 previous weeks)
     const getWeekOptions = () => {
@@ -68,24 +76,26 @@ export const SalesTable = () => {
         try {
             let query = supabase
                 .from('sales_events')
-                .select('id, seller_name, team_name, sale_value, dependents_count, created_at, process_type')
+                .select('id, seller_name, team_name, sale_value, dependents_count, created_at, process_type, seller_id')
                 .order('created_at', { ascending: false });
 
             // Apply Date Filter
             const selectedOpt = weekOptions.find(o => o.value === selectedWeek);
             if (selectedOpt) {
-                // start date is value
                 const startDate = selectedOpt.value;
                 const endDate = selectedOpt.end;
-
                 query = query.gte('created_at', startDate).lte('created_at', endDate);
             } else if (selectedWeek === 'current') {
-                // Default logic if 'current' was passed literally, but we use dates now
                 const opt = weekOptions[0];
                 query = query.gte('created_at', opt.value).lte('created_at', opt.end);
             }
 
-            const { data, error } = await query; // Remove .limit(100) to allow full week view
+            // Apply User Filter (if not Admin)
+            if (!isAdmin && user) {
+                query = query.eq('seller_id', user.id);
+            }
+
+            const { data, error } = await query;
 
             if (error) throw error;
             setSales(data || []);
@@ -97,8 +107,8 @@ export const SalesTable = () => {
     };
 
     useEffect(() => {
-        fetchSales();
-    }, [selectedWeek]); // Re-fetch when week changes
+        if (user) fetchSales();
+    }, [selectedWeek, user, isAdmin]); // Re-fetch when week/user/role changes
 
     const handleEdit = (sale: SaleEvent) => {
         setEditingId(sale.id);
