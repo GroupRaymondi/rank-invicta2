@@ -17,6 +17,7 @@ interface Profile {
     full_name: string;
     avatar_url: string;
     team: string;
+    enable_pos_venda?: boolean;
 }
 
 interface MonthlySales {
@@ -115,7 +116,7 @@ export const PublicDashboard = () => {
                 // Fetch Profiles (All System Users)
                 const { data: profilesData, error: profilesError } = await supabase
                     .from('profiles')
-                    .select('id, full_name, avatar_url, team, status');
+                    .select('id, full_name, avatar_url, team, status, enable_pos_venda');
 
                 if (profilesError) {
                     console.error('Error fetching profiles:', profilesError);
@@ -470,7 +471,7 @@ export const PublicDashboard = () => {
         })).sort((a, b) => b.deals - a.deals);
 
         // Fixed Teams List
-        const KNOWN_TEAMS = ['Titans', 'Phoenix', 'Premium', 'Diamond', 'Legacy Global', 'Imperium', 'Invictus', 'Elite', 'Falcons', 'Blessed'];
+        const KNOWN_TEAMS = ['Titans', 'Phoenix', 'Premium', 'Diamond', 'Legacy Global', 'Imperium', 'Invictus', 'Elite', 'Falcons', 'Blessed', 'Pós Venda'];
 
         // Helper to normalize keys (trim + lowercase)
         const normalize = (s: string) => s.trim().toLowerCase();
@@ -522,8 +523,8 @@ export const PublicDashboard = () => {
         });
 
         const teams = Object.values(teamsMap)
-            // Filter: remove teams with 0 members as requested
-            .filter(team => team.members > 0)
+            // Filter: remove teams with 0 members (except Pós Venda)
+            .filter(team => team.members > 0 || team.id === 'pós venda')
             .sort((a, b) => b.processes - a.processes)
             .map((team, index) => ({
                 ...team,
@@ -593,13 +594,16 @@ export const PublicDashboard = () => {
 
                     {/* 3. Podium (Bottom) */}
                     <div className="flex-none flex items-end justify-center relative z-10 pb-6">
-                        <Podium winners={processedData.sellers.slice(0, 3).map((s, i) => ({
-                            id: s.id,
-                            name: s.name,
-                            amount: s.deals,
-                            position: (i + 1) as 1 | 2 | 3,
-                            avatar: s.avatar
-                        }))} />
+                        <Podium winners={processedData.sellers
+                            .filter(s => s.deals > 0)
+                            .slice(0, 3)
+                            .map((s, i) => ({
+                                id: s.id,
+                                name: s.name,
+                                amount: s.deals,
+                                position: (i + 1) as 1 | 2 | 3,
+                                avatar: s.avatar
+                            }))} />
                     </div>
                 </div>
 
