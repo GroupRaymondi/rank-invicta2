@@ -94,6 +94,16 @@ export const ApprovalQueue = () => {
         fetchQueue();
     }, [selectedStatus]);
 
+    // Keep selectedSale in sync with the latest data
+    useEffect(() => {
+        if (selectedSale) {
+            const updatedSale = sales.find(s => s.id === selectedSale.id);
+            if (updatedSale) {
+                setSelectedSale(updatedSale);
+            }
+        }
+    }, [sales]);
+
     const filteredSales = sales.filter(sale =>
         sale.seller_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         sale.team_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
