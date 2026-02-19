@@ -18,28 +18,14 @@ const AUDIO_RULES: AudioRule[] = [
     {
         minInclusive: 0,
         maxInclusive: 999.99,
-        voicePath: '/sounds/ElevenLabs_Vagner.mp3',
+        voicePath: '/Sininho.mp3',
         playBell: false,
         bellDelay: 0
     },
     {
         minInclusive: 1000,
-        maxInclusive: 1999.99,
-        voicePath: '/sounds/ElevenLabs_Vagner_1k.mp3',
-        playBell: false,
-        bellDelay: 0
-    },
-    {
-        minInclusive: 2000,
-        maxInclusive: 2499.99,
-        voicePath: '/sounds/ElevenLabs_Vagner_2k.mp3',
-        playBell: false,
-        bellDelay: 0
-    },
-    {
-        minInclusive: 2500,
         maxInclusive: Number.MAX_SAFE_INTEGER,
-        voicePath: '/sounds/ElevenLabs_Vagner_5k.mp3',
+        voicePath: '/Foguete.mp3',
         playBell: false,
         bellDelay: 0
     }

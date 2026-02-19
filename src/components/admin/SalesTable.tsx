@@ -148,9 +148,9 @@ export const SalesTable = ({ isAdmin = false }: SalesTableProps) => {
     if (loading) return <div className="p-8 text-center text-gray-400">Carregando vendas...</div>;
 
     return (
-        <div className="bg-[#0f172a] rounded-xl border border-white/10 overflow-hidden shadow-xl">
-            {/* Header / Filters */}
-            <div className="p-4 border-b border-white/10 flex flex-col sm:flex-row gap-4 justify-between items-center bg-white/5">
+        <div className="h-full flex flex-col bg-[#0f172a]">
+            {/* Header / Filters - Fixed at top */}
+            <div className="flex-none p-4 border-b border-white/10 flex flex-col sm:flex-row gap-4 justify-between items-center bg-white/5">
                 <div className="flex flex-col sm:flex-row gap-4 w-full max-w-4xl">
                     <div className="relative w-full max-w-md">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -178,22 +178,22 @@ export const SalesTable = ({ isAdmin = false }: SalesTableProps) => {
                         ))}
                     </select>
                 </div>
-                <div className="text-sm text-gray-400">
+                <div className="text-sm text-gray-400 whitespace-nowrap">
                     Mostrando {filteredSales.length} vendas
                 </div>
             </div>
 
-            {/* Table */}
-            <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                    <thead className="bg-black/20 text-gray-400 uppercase text-xs font-semibold tracking-wider">
+            {/* Table Container - Scrollable Area */}
+            <div className="flex-1 overflow-auto min-h-0 custom-scrollbar">
+                <table className="w-full text-left text-sm relative">
+                    <thead className="bg-[#1e293b] text-gray-400 uppercase text-xs font-semibold tracking-wider sticky top-0 z-20 shadow-sm">
                         <tr>
-                            <th className="px-6 py-4">Data</th>
-                            <th className="px-6 py-4">Vendedor / Equipe</th>
-                            <th className="px-6 py-4">Tipo Processo</th>
-                            <th className="px-6 py-4 text-center">Dependentes</th>
-                            <th className="px-6 py-4 text-center">Total Processos</th>
-                            <th className="px-6 py-4 text-right">Ações</th>
+                            <th className="px-6 py-4 bg-[#1e293b]">Data</th>
+                            <th className="px-6 py-4 bg-[#1e293b]">Vendedor / Equipe</th>
+                            <th className="px-6 py-4 bg-[#1e293b]">Tipo Processo</th>
+                            <th className="px-6 py-4 text-center bg-[#1e293b]">Dependentes</th>
+                            <th className="px-6 py-4 text-center bg-[#1e293b]">Total Processos</th>
+                            <th className="px-6 py-4 text-right bg-[#1e293b]">Ações</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
@@ -290,13 +290,13 @@ export const SalesTable = ({ isAdmin = false }: SalesTableProps) => {
                         ))}
                     </tbody>
                 </table>
-            </div>
 
-            {filteredSales.length === 0 && (
-                <div className="p-8 text-center text-gray-500">
-                    Nenhuma venda encontrada com os filtros atuais.
-                </div>
-            )}
+                {filteredSales.length === 0 && (
+                    <div className="p-8 text-center text-gray-500">
+                        Nenhuma venda encontrada com os filtros atuais.
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
