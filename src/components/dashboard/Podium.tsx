@@ -18,21 +18,21 @@ const PodiumStep: React.FC<{ winner: Winner }> = ({ winner }) => {
 
     return (
         <div className={cn(
-            "flex flex-col items-center justify-end relative group transition-transform duration-500 hover:scale-105",
-            isFirst ? "order-2 -mt-20 z-20" : isSecond ? "order-1 z-10" : "order-3 z-0"
+            "flex flex-col items-center justify-end relative group",
+            isFirst ? "order-2 z-20" : isSecond ? "order-1 z-10" : "order-3 z-0"
         )}>
             {/* Avatar/Icon */}
             <div className={cn(
-                "rounded-full border-4 flex items-center justify-center mb-6 bg-[#021029] relative transition-all duration-500",
-                isFirst ? "w-48 h-48 border-yellow-500 shadow-[0_0_60px_rgba(234,179,8,0.6)]" :
-                    isSecond ? "w-36 h-36 border-gray-300 shadow-[0_0_40px_rgba(209,213,219,0.3)]" :
-                        "w-32 h-32 border-amber-700 shadow-[0_0_40px_rgba(180,83,9,0.3)]"
+                "rounded-full border-4 flex items-center justify-center mb-4 bg-[#021029] relative transition-all duration-500",
+                isFirst ? "w-40 h-40 border-yellow-500 shadow-[0_0_60px_rgba(234,179,8,0.6)]" :
+                    isSecond ? "w-32 h-32 border-gray-300 shadow-[0_0_40px_rgba(209,213,219,0.3)]" :
+                        "w-28 h-28 border-amber-700 shadow-[0_0_40px_rgba(180,83,9,0.3)]"
             )}>
                 {isFirst && (
                     <>
-                        <Crown className="absolute -top-20 text-yellow-500 w-20 h-20 animate-bounce drop-shadow-[0_0_15px_rgba(234,179,8,0.8)]" />
-                        <Sparkles className="absolute -top-16 -right-6 text-yellow-200 w-10 h-10 animate-pulse" />
-                        <Sparkles className="absolute -top-6 -left-6 text-yellow-200 w-8 h-8 animate-pulse delay-100" />
+                        <Crown className="absolute -top-14 text-yellow-500 w-16 h-16 animate-bounce drop-shadow-[0_0_15px_rgba(234,179,8,0.8)]" />
+                        <Sparkles className="absolute -top-10 -right-4 text-yellow-200 w-8 h-8 animate-pulse" />
+                        <Sparkles className="absolute -top-4 -left-4 text-yellow-200 w-6 h-6 animate-pulse delay-100" />
                     </>
                 )}
 
@@ -47,7 +47,7 @@ const PodiumStep: React.FC<{ winner: Winner }> = ({ winner }) => {
                     ) : (
                         <span className={cn(
                             "w-full h-full flex items-center justify-center font-bold",
-                            isFirst ? "text-7xl text-yellow-500" : isSecond ? "text-5xl text-gray-300" : "text-4xl text-amber-700"
+                            isFirst ? "text-6xl text-yellow-500" : isSecond ? "text-4xl text-gray-300" : "text-3xl text-amber-700"
                         )}>
                             {winner.name.charAt(0)}
                         </span>
@@ -55,7 +55,7 @@ const PodiumStep: React.FC<{ winner: Winner }> = ({ winner }) => {
                 </div>
 
                 <div className={cn(
-                    "absolute -bottom-5 px-6 py-2 rounded-full text-lg font-black uppercase tracking-wider text-black shadow-xl border-4 border-[#021029]",
+                    "absolute -bottom-4 px-5 py-1.5 rounded-full text-base font-black uppercase tracking-wider text-black shadow-xl border-4 border-[#021029]",
                     isFirst ? "bg-yellow-500 scale-110" : isSecond ? "bg-gray-300" : "bg-amber-700 text-white"
                 )}>
                     {winner.position}º
@@ -63,16 +63,16 @@ const PodiumStep: React.FC<{ winner: Winner }> = ({ winner }) => {
             </div>
 
             {/* Name & Value */}
-            <div className="text-center mb-6 relative z-20">
+            <div className="text-center mb-4 relative z-20">
                 <h3 className={cn(
                     "font-bold text-white mb-1 tracking-tight drop-shadow-md",
-                    isFirst ? "text-4xl text-glow-accent" : "text-2xl"
+                    isFirst ? "text-3xl text-glow-accent" : "text-xl"
                 )}>
                     {winner.name}
                 </h3>
                 <p className={cn(
                     "font-mono font-medium opacity-80",
-                    isFirst ? "text-yellow-400 text-xl" : "text-gray-400 text-lg"
+                    isFirst ? "text-yellow-400 text-lg" : "text-gray-400 text-base"
                 )}>
                     {winner.amount} Processos
                 </p>
@@ -80,10 +80,10 @@ const PodiumStep: React.FC<{ winner: Winner }> = ({ winner }) => {
 
             {/* Podium Block */}
             <div className={cn(
-                "w-full min-w-[220px] rounded-t-3xl backdrop-blur-2xl border-t border-x border-white/10 flex items-end justify-center pb-8 shadow-[0_10px_50px_rgba(0,0,0,0.5)] relative overflow-hidden",
-                isFirst ? "h-80 bg-gradient-to-b from-yellow-500/30 via-yellow-500/10 to-transparent" :
-                    isSecond ? "h-60 bg-gradient-to-b from-gray-300/30 via-gray-300/10 to-transparent" :
-                        "h-48 bg-gradient-to-b from-amber-700/30 via-amber-700/10 to-transparent"
+                "w-full min-w-[200px] rounded-t-3xl backdrop-blur-2xl border-t border-x border-white/10 flex items-end justify-center pb-6 shadow-[0_10px_50px_rgba(0,0,0,0.5)] relative overflow-hidden",
+                isFirst ? "h-64 bg-gradient-to-b from-yellow-500/30 via-yellow-500/10 to-transparent" :
+                    isSecond ? "h-48 bg-gradient-to-b from-gray-300/30 via-gray-300/10 to-transparent" :
+                        "h-36 bg-gradient-to-b from-amber-700/30 via-amber-700/10 to-transparent"
             )}>
                 {/* Shine Effect */}
                 <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/10 to-white/0 translate-y-full group-hover:translate-y-0 transition-transform duration-700" />
@@ -95,7 +95,7 @@ const PodiumStep: React.FC<{ winner: Winner }> = ({ winner }) => {
                 )} />
 
                 <Trophy className={cn(
-                    "w-24 h-24 opacity-40 drop-shadow-2xl transform group-hover:scale-110 transition-transform duration-300",
+                    "w-20 h-20 opacity-40 drop-shadow-2xl",
                     isFirst ? "text-yellow-500" : isSecond ? "text-gray-300" : "text-amber-700"
                 )} />
             </div>

@@ -583,8 +583,8 @@ export const PublicDashboard = () => {
                     <div className="flex-1" />
 
                     {/* 2. KPI (Centered in available space) */}
-                    <div className="flex-none flex items-center justify-center relative z-20 min-h-0">
-                        <div className="transform scale-125 hover:scale-135 transition-transform duration-300">
+                    <div className="flex-none flex items-center justify-center relative z-20 min-h-0 mb-4">
+                        <div className="transform transition-transform duration-300">
                             <KPICards totalProcesses={processedData.totalProcesses} />
                         </div>
                     </div>
