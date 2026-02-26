@@ -81,7 +81,8 @@ export const TeamReport = () => {
                     .sort((a, b) => b.totalSales - a.totalSales);
 
                 setTeams(sortedTeams);
-                setExpandedTeams(new Set(sortedTeams.map((t) => t.name)));
+                // Colapsar todas as equipes por padrão para mostrar o ranking geral de equipes de forma clara
+                setExpandedTeams(new Set());
             } catch (error) {
                 console.error('Error fetching team report:', error);
             } finally {
