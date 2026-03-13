@@ -17,6 +17,7 @@ interface SaleProcess {
     paid_amount: number;
     approval_status: 'PENDENTE_APROVACAO' | 'EM_REVISAO' | 'APROVADA' | 'REPROVADA' | 'AJUSTE_SOLICITADO';
     client_name?: string;
+    payments?: any[];
 }
 
 export const ApprovalQueue = () => {
@@ -43,9 +44,9 @@ export const ApprovalQueue = () => {
                     contract_value, 
                     paid_amount, 
                     approval_status,
-                    approval_status,
                     created_by,
-                    client_name
+                    client_name,
+                    payments (id, amount, installment_number, status)
                 `)
                 .order('created_at', { ascending: false });
 
@@ -194,7 +195,11 @@ export const ApprovalQueue = () => {
                                 <div className="text-right">
                                     <div className="text-xs text-gray-500 uppercase tracking-wider">Entrada</div>
                                     <div className="text-green-400 font-bold whitespace-nowrap">
-                                        {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(sale.paid_amount || 0)}
+                                        {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(
+                                            (sale.payments?.find((p: any) => p.installment_number == 0 || p.installment_number == -1)?.amount) 
+                                            || sale.paid_amount 
+                                            || 0
+                                        )}
                                     </div>
                                 </div>
                                 <div className="text-right">

@@ -19,6 +19,7 @@ interface SaleProcess {
     notes?: string;
     rejection_reason?: string;
     adjustment_request_reason?: string;
+    payments?: any[];
 }
 
 interface ReviewModalProps {
@@ -35,10 +36,14 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({ sale, isOpen, onClose,
 
     // Editable Fields State
     const [editMode, setEditMode] = useState(false);
+    const initialEntryAmount = (sale.payments?.find((p: any) => p.installment_number === 0 || p.installment_number === -1)?.amount) 
+        || sale.paid_amount 
+        || 0;
+
     const [editedValues, setEditedValues] = useState({
         process_type_name: sale.process_type_name,
         contract_value: sale.contract_value,
-        paid_amount: sale.paid_amount,
+        paid_amount: initialEntryAmount,
         dependents_count: Array.isArray(sale.dependents) ? sale.dependents.length : 0
     });
 
@@ -115,6 +120,16 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({ sale, isOpen, onClose,
                 .eq('id', sale.id);
 
             if (error) throw error;
+
+            // Also update the underlying payment if it exists, otherwise the entry value is lost
+            const entryPayment = sale.payments?.find((p: any) => p.installment_number === 0 || p.installment_number === -1);
+            if (entryPayment?.id) {
+                const { error: paymentError } = await supabase
+                    .from('payments')
+                    .update({ amount: editedValues.paid_amount })
+                    .eq('id', entryPayment.id);
+                if (paymentError) throw paymentError;
+            }
 
             setEditMode(false);
             onUpdate(); // Refresh parent to get new data
@@ -247,7 +262,7 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({ sale, isOpen, onClose,
                                 />
                             ) : (
                                 <div className="text-lg text-green-400 font-bold">
-                                    {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(sale.paid_amount || 0)}
+                                    {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(initialEntryAmount)}
                                 </div>
                             )}
                         </div>
